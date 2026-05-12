@@ -1,0 +1,15 @@
+﻿
+FullName                                                                               
+--------                                                                               
+F:\FYP\Agricare\Backend\src\routes\cropRecommendation.routes.js                        
+F:\FYP\Agricare\Backend\src\routes\ai_chatbot\aiChatRoutes.js                          
+F:\FYP\Agricare\Backend\src\routes\auth\authentication.js                              
+F:\FYP\Agricare\Backend\src\routes\community_chat\chatRoutes.js                        
+F:\FYP\Agricare\Backend\src\routes\fertilizer_advisery\fertilizer_advisery.js          
+F:\FYP\Agricare\Backend\src\routes\harvest_advisery\harvest_advisery.js                
+F:\FYP\Agricare\Backend\src\routes\marketplace\marketplace.routes.js                   
+F:\FYP\Agricare\Backend\src\routes\marketplace\upload.routes.js                        
+F:\FYP\Agricare\Backend\src\routes\news\news.routes.js                                 
+F:\FYP\Agricare\Backend\src\routes\plants_recommendation\plants_recommendation_route.js
+
+

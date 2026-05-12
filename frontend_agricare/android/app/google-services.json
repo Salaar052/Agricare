@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "758873041176",
+    "project_id": "agricare-fe9a6",
+    "storage_bucket": "agricare-fe9a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758873041176:android:95e573484dea8f1e3cd66d",
+        "android_client_info": {
+          "package_name": "com.example.frontend_agricare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_R9wq99tWLbAFqZ6vX5OpSA0eSS_kNN4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

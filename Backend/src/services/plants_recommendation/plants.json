@@ -1,0 +1,222 @@
+[
+  {
+    "id": 1,
+    "name": "Tomato",
+    "temp_min": 18,
+    "temp_max": 35,
+    "space": ["garden", "balcony"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🍅",
+    "category": "Vegetable"
+  },
+  {
+    "id": 2,
+    "name": "Mint",
+    "temp_min": 10,
+    "temp_max": 30,
+    "space": ["balcony", "indoor"],
+    "sunlight": "partial",
+    "water": "high",
+    "emoji": "🌿",
+    "category": "Herb"
+  },
+  {
+    "id": 3,
+    "name": "Chili Pepper",
+    "temp_min": 20,
+    "temp_max": 38,
+    "space": ["garden", "balcony"],
+    "sunlight": "full",
+    "water": "low",
+    "emoji": "🌶️",
+    "category": "Vegetable"
+  },
+  {
+    "id": 4,
+    "name": "Lettuce",
+    "temp_min": 7,
+    "temp_max": 22,
+    "space": ["balcony", "indoor", "garden"],
+    "sunlight": "partial",
+    "water": "medium",
+    "emoji": "🥬",
+    "category": "Vegetable"
+  },
+  {
+    "id": 5,
+    "name": "Basil",
+    "temp_min": 18,
+    "temp_max": 35,
+    "space": ["balcony", "indoor"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🌱",
+    "category": "Herb"
+  },
+  {
+    "id": 6,
+    "name": "Cucumber",
+    "temp_min": 20,
+    "temp_max": 35,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "high",
+    "emoji": "🥒",
+    "category": "Vegetable"
+  },
+  {
+    "id": 7,
+    "name": "Spinach",
+    "temp_min": 5,
+    "temp_max": 20,
+    "space": ["balcony", "indoor", "garden"],
+    "sunlight": "partial",
+    "water": "medium",
+    "emoji": "🍃",
+    "category": "Vegetable"
+  },
+  {
+    "id": 8,
+    "name": "Bell Pepper",
+    "temp_min": 18,
+    "temp_max": 32,
+    "space": ["garden", "balcony"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🫑",
+    "category": "Vegetable"
+  },
+  {
+    "id": 9,
+    "name": "Carrot",
+    "temp_min": 10,
+    "temp_max": 25,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🥕",
+    "category": "Root Vegetable"
+  },
+  {
+    "id": 10,
+    "name": "Coriander",
+    "temp_min": 15,
+    "temp_max": 30,
+    "space": ["balcony", "indoor", "garden"],
+    "sunlight": "partial",
+    "water": "medium",
+    "emoji": "🌿",
+    "category": "Herb"
+  },
+  {
+    "id": 11,
+    "name": "Eggplant",
+    "temp_min": 22,
+    "temp_max": 38,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🍆",
+    "category": "Vegetable"
+  },
+  {
+    "id": 12,
+    "name": "Green Onion",
+    "temp_min": 10,
+    "temp_max": 28,
+    "space": ["balcony", "indoor", "garden"],
+    "sunlight": "partial",
+    "water": "medium",
+    "emoji": "🧅",
+    "category": "Vegetable"
+  },
+  {
+    "id": 13,
+    "name": "Radish",
+    "temp_min": 5,
+    "temp_max": 20,
+    "space": ["garden", "balcony"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🌸",
+    "category": "Root Vegetable"
+  },
+  {
+    "id": 14,
+    "name": "Zucchini",
+    "temp_min": 18,
+    "temp_max": 35,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "high",
+    "emoji": "🥬",
+    "category": "Vegetable"
+  },
+  {
+    "id": 15,
+    "name": "Aloe Vera",
+    "temp_min": 15,
+    "temp_max": 40,
+    "space": ["balcony", "indoor"],
+    "sunlight": "partial",
+    "water": "low",
+    "emoji": "🌵",
+    "category": "Succulent"
+  },
+  {
+    "id": 16,
+    "name": "Fenugreek",
+    "temp_min": 15,
+    "temp_max": 30,
+    "space": ["balcony", "indoor", "garden"],
+    "sunlight": "partial",
+    "water": "medium",
+    "emoji": "🌿",
+    "category": "Herb"
+  },
+  {
+    "id": 17,
+    "name": "Okra",
+    "temp_min": 25,
+    "temp_max": 40,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "medium",
+    "emoji": "🫛",
+    "category": "Vegetable"
+  },
+  {
+    "id": 18,
+    "name": "Swiss Chard",
+    "temp_min": 8,
+    "temp_max": 25,
+    "space": ["garden", "balcony"],
+    "sunlight": "partial",
+    "water": "medium",
+    "emoji": "🥗",
+    "category": "Vegetable"
+  },
+  {
+    "id": 19,
+    "name": "Garlic",
+    "temp_min": 5,
+    "temp_max": 25,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "low",
+    "emoji": "🧄",
+    "category": "Bulb"
+  },
+  {
+    "id": 20,
+    "name": "Bitter Melon",
+    "temp_min": 24,
+    "temp_max": 40,
+    "space": ["garden"],
+    "sunlight": "full",
+    "water": "high",
+    "emoji": "🥝",
+    "category": "Vegetable"
+  }
+]

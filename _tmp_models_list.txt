@@ -1,0 +1,15 @@
+﻿
+FullName                                                           
+--------                                                           
+F:\FYP\Agricare\Backend\src\models\ai_chatbot\aiChat.js            
+F:\FYP\Agricare\Backend\src\models\ai_chatbot\aiMessage.js         
+F:\FYP\Agricare\Backend\src\models\auth\adminLoginLog.js           
+F:\FYP\Agricare\Backend\src\models\auth\user.js                    
+F:\FYP\Agricare\Backend\src\models\community_chat\ChatRoom.js      
+F:\FYP\Agricare\Backend\src\models\community_chat\Message.js       
+F:\FYP\Agricare\Backend\src\models\farmer\farmer.model.js          
+F:\FYP\Agricare\Backend\src\models\marketplace\item.model.js       
+F:\FYP\Agricare\Backend\src\models\marketplace\marketplace.model.js
+F:\FYP\Agricare\Backend\src\models\news\news.model.js              
+
+

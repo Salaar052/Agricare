@@ -1,0 +1,154 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../api/api_config.dart';
+
+class ApiService {
+  static final String baseUrl = ApiConfig.fertilizerHarvestAdvisory;
+
+  static const Map<String, String> _headers = {
+    'Content-Type': 'application/json',
+  };
+
+  /// POST /api/advisory
+  static Future<AdvisoryResult> getAdvisory({
+    required String crop,
+    required SoilInput soil,
+    required WeatherInput weather,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/advisory'),
+      headers: _headers,
+      body: jsonEncode({
+        'crop': crop,
+        'soil': soil.toJson(),
+        'weather': weather.toJson(),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return AdvisoryResult.fromJson(jsonDecode(response.body));
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to get advisory');
+    }
+  }
+
+  /// POST /api/harvest
+  static Future<HarvestResult> getHarvestSuggestion({
+    required String crop,
+    required List<ForecastDay> forecast,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/harvest'),
+      headers: _headers,
+      body: jsonEncode({
+        'crop': crop,
+        'forecast': forecast.map((f) => f.toJson()).toList(),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return HarvestResult.fromJson(jsonDecode(response.body));
+    } else {
+      final error = jsonDecode(response.body);
+      throw Exception(error['error'] ?? 'Failed to get harvest suggestion');
+    }
+  }
+}
+
+// ─── Input Models ─────────────────────────────────────────────────────────────
+
+class SoilInput {
+  final double nitrogen;
+  final double phosphorus;
+  final double potassium;
+
+  const SoilInput({
+    required this.nitrogen,
+    required this.phosphorus,
+    required this.potassium,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'nitrogen': nitrogen,
+    'phosphorus': phosphorus,
+    'potassium': potassium,
+  };
+}
+
+class WeatherInput {
+  final double temperature;
+  final double humidity;
+
+  const WeatherInput({required this.temperature, required this.humidity});
+
+  Map<String, dynamic> toJson() => {
+    'temperature': temperature,
+    'humidity': humidity,
+  };
+}
+
+class ForecastDay {
+  final double temp;
+  final double rain;
+
+  const ForecastDay({required this.temp, required this.rain});
+
+  Map<String, dynamic> toJson() => {'temp': temp, 'rain': rain};
+}
+
+// ─── Response Models ───────────────────────────────────────────────────────────
+
+class PesticideAdvisory {
+  final String issue;
+  final String solution;
+
+  const PesticideAdvisory({required this.issue, required this.solution});
+
+  factory PesticideAdvisory.fromJson(Map<String, dynamic> json) =>
+      PesticideAdvisory(issue: json['issue'], solution: json['solution']);
+}
+
+class AdvisoryResult {
+  final String crop;
+  final List<String> fertilizers;
+  final List<PesticideAdvisory> pesticides;
+
+  const AdvisoryResult({
+    required this.crop,
+    required this.fertilizers,
+    required this.pesticides,
+  });
+
+  factory AdvisoryResult.fromJson(Map<String, dynamic> json) => AdvisoryResult(
+    crop: json['crop'] ?? '',
+    fertilizers: List<String>.from(json['fertilizers'] ?? []),
+    pesticides: (json['pesticides'] as List? ?? [])
+        .map((p) => PesticideAdvisory.fromJson(p))
+        .toList(),
+  );
+}
+
+class HarvestResult {
+  final String crop;
+  final String baseDate;
+  final String harvestDate;
+  final int adjustmentDays;
+  final String advice;
+
+  const HarvestResult({
+    required this.crop,
+    required this.baseDate,
+    required this.harvestDate,
+    required this.adjustmentDays,
+    required this.advice,
+  });
+
+  factory HarvestResult.fromJson(Map<String, dynamic> json) => HarvestResult(
+    crop: json['crop'] ?? '',
+    baseDate: json['baseDate'] ?? '',
+    harvestDate: json['harvestDate'] ?? '',
+    adjustmentDays: json['adjustmentDays'] ?? 0,
+    advice: json['advice'] ?? '',
+  );
+}
