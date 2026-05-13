@@ -1,5 +1,5 @@
 // ============================================
-// FILE 2: src/index.js (UPDATED - Replace your existing index.js)
+// FILE 2: src/server.js (UPDATED - Replace your existing index.js)
 // ============================================
 import dotenv from "dotenv";
 import http from "http";

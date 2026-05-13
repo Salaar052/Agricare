@@ -5,13 +5,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js",
-    "start": "node src/index.js"
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
   },
   "keywords": [
     "AgriCare"
   ],
-  "author": "Aqeel",
+  "author": "Salaar, Aqeel, Ali",
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^3.1.10"
