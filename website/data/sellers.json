@@ -1,0 +1,19 @@
+[
+  {
+    "id": "sel_001",
+    "name": "GreenGrow Supplies",
+    "email": "seller1@example.com",
+    "phone": "+92 300 1111111",
+    "status": "active",
+    "createdAt": "2026-05-01T10:00:00.000Z"
+  },
+  {
+    "id": "sel_002",
+    "name": "FarmPro Traders",
+    "email": "seller2@example.com",
+    "phone": "+92 300 2222222",
+    "status": "disabled",
+    "createdAt": "2026-05-02T10:00:00.000Z"
+  }
+]
+

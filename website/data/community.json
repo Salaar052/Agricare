@@ -1,0 +1,23 @@
+{
+  "users": [
+    { "id": "usr_001", "name": "Ali", "blocked": false },
+    { "id": "usr_002", "name": "Ayesha", "blocked": false }
+  ],
+  "messages": [
+    {
+      "id": "msg_001",
+      "userId": "usr_001",
+      "group": "Wheat Farmers",
+      "text": "Any tips for rust disease prevention?",
+      "createdAt": "2026-05-08T18:00:00.000Z"
+    },
+    {
+      "id": "msg_002",
+      "userId": "usr_002",
+      "group": "Wheat Farmers",
+      "text": "Buy cheap pesticide from me!!! (spam)",
+      "createdAt": "2026-05-08T18:02:00.000Z"
+    }
+  ]
+}
+

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "lst_001",
+    "sellerId": "sel_001",
+    "title": "Urea Fertilizer 50kg",
+    "price": 9200,
+    "status": "pending",
+    "createdAt": "2026-05-08T15:00:00.000Z"
+  },
+  {
+    "id": "lst_002",
+    "sellerId": "sel_002",
+    "title": "Neem Oil Organic Pesticide 1L",
+    "price": 1800,
+    "status": "approved",
+    "createdAt": "2026-05-07T10:00:00.000Z"
+  }
+]
+
