@@ -549,7 +549,7 @@ class _WeatherBasedCropRecommendationScreenState
         ),
         const SizedBox(height: 18),
         const Text(
-          'Fetching weather data…',
+          'Fetching Best crop according to your weather…',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,

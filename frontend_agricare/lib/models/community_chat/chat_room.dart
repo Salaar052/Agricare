@@ -72,20 +72,25 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    final idRaw = json['_id'] ?? json['id'];
+    final idStr = idRaw == null ? '' : idRaw.toString();
+    final roomRaw = json['roomId'];
     return Message(
-      id: json['_id'] ?? json['id'] ?? '',
-      roomId: json['roomId'] ?? '',
+      id: idStr,
+      roomId: roomRaw == null ? '' : roomRaw.toString(),
       sender: json['sender'] is Map
-          ? (json['sender']['_id'] ?? json['sender']['id'] ?? '')
-          : (json['sender'] ?? ''),
+          ? (json['sender']['_id'] ?? json['sender']['id'] ?? '').toString()
+          : (json['sender'] ?? '').toString(),
 
       senderName: json['sender'] is Map
           ? (json['sender']['username'] ?? '')
-          : (json['senderName'] ?? ''), // ✅ NEW FIELD HANDLING
+          : (json['senderName'] ?? ''),
 
-      message: json['message'],
-      fileUrl: json['fileUrl'],
-      readBy: List<String>.from(json['readBy'] ?? []),
+      message: json['message'] as String?,
+      fileUrl: json['fileUrl'] as String?,
+      readBy: List<String>.from(
+        (json['readBy'] as List<dynamic>?)?.map((e) => e.toString()) ?? [],
+      ),
       createdAt: DateTime.parse(
         json['createdAt'] ?? DateTime.now().toIso8601String(),
       ),

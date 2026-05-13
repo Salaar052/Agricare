@@ -87,21 +87,29 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     });
 
     socket!.on("newMessage", (data) {
-      final newMessage = Message(
-        id: data['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        roomId: data['roomId'] ?? '',
-        sender: data['sender'] ?? '',
-        senderName: data['senderName'] ?? '',
-        message: data['message'],
-        fileUrl: data['fileUrl'],
-        readBy: List<String>.from(data['readBy'] ?? []),
-        createdAt: DateTime.parse(
-          data['createdAt'] ?? DateTime.now().toIso8601String(),
-        ),
-      );
+      if (data is! Map) return;
+      final raw = Map<String, dynamic>.from(data);
+      final newMessage = Message.fromJson(raw);
 
-      // Prevent duplicate messages
-      if (!_chatController.messages.any((m) => m.id == newMessage.id)) {
+      // Avoid duplicates: REST upload already adds once; socket may use a
+      // different id shape than the HTTP response, so also match file + sender.
+      final exists = _chatController.messages.any((m) {
+        if (m.id.isNotEmpty &&
+            newMessage.id.isNotEmpty &&
+            m.id == newMessage.id) {
+          return true;
+        }
+        final u = m.fileUrl;
+        final v = newMessage.fileUrl;
+        if (u != null &&
+            v != null &&
+            u == v &&
+            m.sender == newMessage.sender) {
+          return true;
+        }
+        return false;
+      });
+      if (!exists) {
         _chatController.messages.add(newMessage);
         _scrollToBottom();
       }
@@ -155,14 +163,16 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     );
 
     if (image != null) {
-      File? file;
-
       if (kIsWeb) {
         final bytes = await image.readAsBytes();
-        file = File.fromRawPath(bytes);
-      } else {
-        file = File(image.path);
+        final name = image.name.isNotEmpty ? image.name : 'image.jpg';
+        final success =
+            await _chatController.uploadFileBytes(currentRoom.id, bytes, filename: name);
+        if (success) _scrollToBottom();
+        return;
       }
+
+      File? file = File(image.path);
 
       final success = await _chatController.uploadFile(currentRoom.id, file);
       if (success) _scrollToBottom();
@@ -272,6 +282,23 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           // INPUT
           Row(
             children: [
+              Obx(() {
+                final uploading = _chatController.isSendingMessage.value;
+                return IconButton(
+                  tooltip: uploading ? "Uploading…" : "Send image",
+                  icon: uploading
+                      ? SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        )
+                      : const Icon(Icons.image_outlined),
+                  onPressed: uploading ? null : _pickImage,
+                );
+              }),
               Expanded(
                 child: TextField(
                   controller: _messageController,

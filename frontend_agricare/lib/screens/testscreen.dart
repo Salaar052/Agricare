@@ -196,23 +196,6 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 16),
 
-                  // User ID
-                  _buildInfoCard(
-                    icon: Icons.fingerprint,
-                    label: 'User ID',
-                    value: Obx(
-                      () => Text(
-                        authController.userId.value,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
-                    color: Color(0xFF3B82F6),
-                  ),
-
                   // Email
                   _buildInfoCard(
                     icon: Icons.email,
@@ -267,12 +250,11 @@ class ProfileScreen extends StatelessWidget {
 
                         if (authController.hasLocation) {
                           return Text(
-                            'Lat ${authController.latitude.value.toStringAsFixed(4)}, '
-                            'Lng ${authController.longitude.value.toStringAsFixed(4)}',
+                            'Location saved (used for weather & advisory)',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: Color(0xFF6B7280),
-                              fontFamily: 'monospace',
+                              fontWeight: FontWeight.w500,
                             ),
                           );
                         }
@@ -288,25 +270,6 @@ class ProfileScreen extends StatelessWidget {
                       },
                     ),
                     color: Color(0xFF4A7C2C),
-                  ),
-
-                  // Token Preview (first 30 chars)
-                  _buildInfoCard(
-                    icon: Icons.vpn_key,
-                    label: 'Auth Token',
-                    value: Obx(
-                      () => Text(
-                        authController.token.value.isNotEmpty
-                            ? '${authController.token.value.substring(0, 30)}...'
-                            : 'No token',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
-                    color: Color(0xFFF59E0B),
                   ),
 
                   SizedBox(height: 24),
@@ -352,60 +315,6 @@ class ProfileScreen extends StatelessWidget {
                         snackPosition: SnackPosition.BOTTOM,
                         backgroundColor: Color(0xFF10B981),
                         colorText: Colors.white,
-                      );
-                    },
-                  ),
-
-                  // View Token Button (for testing)
-                  _buildActionButton(
-                    icon: Icons.code,
-                    label: 'View Full Token',
-                    color: Color(0xFF8B5CF6),
-                    onTap: () {
-                      Get.dialog(
-                        Dialog(
-                          child: Container(
-                            padding: EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Auth Token',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.close),
-                                      onPressed: () => Get.back(),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 16),
-                                Container(
-                                  padding: EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFFF3F4F6),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: SelectableText(
-                                    authController.token.value,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       );
                     },
                   ),

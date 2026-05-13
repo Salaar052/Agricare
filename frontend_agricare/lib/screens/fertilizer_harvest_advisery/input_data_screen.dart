@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../api/fertilizer_havest_advisert/api_service.dart';
+import '../../controllers/auth_controller.dart';
+import '../../services/location_service.dart';
 import '../../widgets/common_widets.dart';
 import '../../utils/theme.dart';
 import './advisery_screen.dart';
@@ -18,18 +21,23 @@ class _FertilizerHarvestAdvisoryInputScreenState
     extends State<FertilizerHarvestAdvisoryInputScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
-  final _cropController = TextEditingController(text: 'rice');
+  static const String _otherCropKey = '__other__';
+
   final _nitrogenController = TextEditingController(text: '30');
   final _phosphorusController = TextEditingController(text: '20');
   final _potassiumController = TextEditingController(text: '25');
-  final _temperatureController = TextEditingController(text: '34');
-  final _humidityController = TextEditingController(text: '85');
+  final _temperatureController = TextEditingController();
+  final _humidityController = TextEditingController();
+  final _customCropController = TextEditingController();
 
   bool _isLoading = false;
+  bool _weatherLoading = true;
+  String? _weatherHint;
   String? _errorMessage;
 
-  final List<String> _crops = [
+  String _cropDropdown = 'rice';
+
+  final List<String> _presetCrops = const [
     'rice',
     'wheat',
     'maize',
@@ -39,14 +47,75 @@ class _FertilizerHarvestAdvisoryInputScreenState
     'tomato',
   ];
 
+  final LocationService _locationService = LocationService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLiveWeather();
+  }
+
+  Future<void> _loadLiveWeather() async {
+    setState(() {
+      _weatherLoading = true;
+      _weatherHint = null;
+    });
+
+    try {
+      final auth = Get.find<AuthController>();
+      final lat = auth.latitude.value;
+      final lng = auth.longitude.value;
+
+      if (lat == 0.0 && lng == 0.0) {
+        if (!mounted) return;
+        setState(() {
+          _temperatureController.text = '28';
+          _humidityController.text = '65';
+          _weatherHint =
+              'Save your location in Profile to use GPS-based weather here.';
+          _weatherLoading = false;
+        });
+        return;
+      }
+
+      final w = await _locationService.getWeather(
+        latitude: lat,
+        longitude: lng,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _temperatureController.text = w.temperature.round().toString();
+        _humidityController.text = w.humidity.round().toString();
+        _weatherHint = 'Using weather for your saved location.';
+        _weatherLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _temperatureController.text = '28';
+        _humidityController.text = '65';
+        _weatherHint = 'Could not load live weather. Values are editable.';
+        _weatherLoading = false;
+      });
+    }
+  }
+
+  String get _effectiveCropName {
+    if (_cropDropdown == _otherCropKey) {
+      return _customCropController.text.trim();
+    }
+    return _cropDropdown;
+  }
+
   @override
   void dispose() {
-    _cropController.dispose();
     _nitrogenController.dispose();
     _phosphorusController.dispose();
     _potassiumController.dispose();
     _temperatureController.dispose();
     _humidityController.dispose();
+    _customCropController.dispose();
     super.dispose();
   }
 
@@ -60,7 +129,7 @@ class _FertilizerHarvestAdvisoryInputScreenState
 
     try {
       final result = await ApiService.getAdvisory(
-        crop: _cropController.text.trim(),
+        crop: _effectiveCropName,
         soil: SoilInput(
           nitrogen: double.parse(_nitrogenController.text),
           phosphorus: double.parse(_phosphorusController.text),
@@ -118,27 +187,14 @@ class _FertilizerHarvestAdvisoryInputScreenState
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 8,
-                        ),
+                      crossAxisCount: 8,
+                    ),
                     itemBuilder: (_, __) =>
                         const Icon(Icons.grass, color: Colors.white),
                   ),
                 ),
               ),
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(
-                  Icons.calendar_month_rounded,
-                  color: Colors.white,
-                ),
-                tooltip: 'Harvest Planner',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HarvestScreen()),
-                ),
-              ),
-            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -148,43 +204,80 @@ class _FertilizerHarvestAdvisoryInputScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Crop Selection
                     _buildSectionCard(
                       title: 'Crop Information',
                       icon: Icons.eco_rounded,
                       color: AppTheme.primary,
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           DropdownButtonFormField<String>(
-                            value: _cropController.text,
+                            value: _cropDropdown,
                             decoration: const InputDecoration(
-                              labelText: 'Select Crop',
+                              labelText: 'Select crop',
                               prefixIcon: Icon(
                                 Icons.grass_rounded,
                                 color: AppTheme.primary,
                               ),
                             ),
-                            items: _crops
-                                .map(
-                                  (c) => DropdownMenuItem(
-                                    value: c,
-                                    child: Text(
-                                      c[0].toUpperCase() + c.substring(1),
-                                    ),
+                            items: [
+                              ..._presetCrops.map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(
+                                    c[0].toUpperCase() + c.substring(1),
                                   ),
-                                )
-                                .toList(),
+                                ),
+                              ),
+                              const DropdownMenuItem(
+                                value: _otherCropKey,
+                                child: Text('Other — type your crop'),
+                              ),
+                            ],
                             onChanged: (v) {
-                              if (v != null) _cropController.text = v;
+                              if (v == null) return;
+                              setState(() => _cropDropdown = v);
                             },
                           ),
+                          if (_cropDropdown == _otherCropKey) ...[
+                            const SizedBox(height: 14),
+                            TextFormField(
+                              controller: _customCropController,
+                              textCapitalization: TextCapitalization.sentences,
+                              decoration: const InputDecoration(
+                                labelText: 'Crop name',
+                                hintText: 'e.g. Dragon fruit, gram, mustard…',
+                                prefixIcon: Icon(
+                                  Icons.edit_note_rounded,
+                                  color: AppTheme.primary,
+                                ),
+                              ),
+                              validator: (v) {
+                                if (_cropDropdown != _otherCropKey) {
+                                  return null;
+                                }
+                                if (v == null || v.trim().isEmpty) {
+                                  return 'Enter your crop name';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Unlisted crops are sent to AgriCare AI for a short growing note with your advisory.',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11,
+                                color: AppTheme.textSecondary,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
 
                     const SizedBox(height: 16),
 
-                    // Soil Nutrients
                     _buildSectionCard(
                       title: 'Soil Nutrients',
                       icon: Icons.landscape_rounded,
@@ -217,29 +310,62 @@ class _FertilizerHarvestAdvisoryInputScreenState
 
                     const SizedBox(height: 16),
 
-                    // Weather Conditions
                     _buildSectionCard(
-                      title: 'Current Weather',
+                      title: 'Current weather',
                       icon: Icons.wb_sunny_rounded,
                       color: AppTheme.accentLight,
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: NutrientField(
-                              label: 'Temperature',
-                              unit: '°C',
-                              controller: _temperatureController,
-                              icon: Icons.thermostat_rounded,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _weatherHint ??
+                                      'Loading weather from your location…',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ),
+                              if (_weatherLoading)
+                                const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              else
+                                IconButton(
+                                  tooltip: 'Refresh weather',
+                                  onPressed: _loadLiveWeather,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: NutrientField(
-                              label: 'Humidity',
-                              unit: '%',
-                              controller: _humidityController,
-                              icon: Icons.water_drop_rounded,
-                            ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: NutrientField(
+                                  label: 'Temperature',
+                                  unit: '°C',
+                                  controller: _temperatureController,
+                                  icon: Icons.thermostat_rounded,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: NutrientField(
+                                  label: 'Humidity',
+                                  unit: '%',
+                                  controller: _humidityController,
+                                  icon: Icons.water_drop_rounded,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -247,7 +373,6 @@ class _FertilizerHarvestAdvisoryInputScreenState
 
                     const SizedBox(height: 20),
 
-                    // Error
                     if (_errorMessage != null) ...[
                       Container(
                         padding: const EdgeInsets.all(14),
@@ -279,7 +404,6 @@ class _FertilizerHarvestAdvisoryInputScreenState
                       const SizedBox(height: 16),
                     ],
 
-                    // Submit Button
                     LoadingButton(
                       isLoading: _isLoading,
                       onPressed: _getAdvisory,

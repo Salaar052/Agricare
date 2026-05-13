@@ -682,8 +682,8 @@ const rejectAdminListing = asyncHandler(async (req, res) => {
 
   const item = await Item.findById(productId);
   if (!item) throw new ApiError(404, "Listing not found");
-  if (item.status !== "pending") {
-    throw new ApiError(400, "Only pending listings can be rejected");
+  if (!["pending", "approved"].includes(item.status)) {
+    throw new ApiError(400, "Only pending or approved listings can be rejected");
   }
 
   item.status = "rejected";
@@ -693,6 +693,28 @@ const rejectAdminListing = asyncHandler(async (req, res) => {
 
   return res.status(200).json(
     new ApiResponse(200, { item }, "Listing rejected successfully")
+  );
+});
+
+const deleteAdminListing = asyncHandler(async (req, res) => {
+  assertSuperAdmin(req);
+  const { productId } = req.params;
+  if (!productId || !mongoose.isValidObjectId(productId)) {
+    throw new ApiError(400, "Valid product ID is required");
+  }
+
+  const item = await Item.findById(productId);
+  if (!item) throw new ApiError(404, "Listing not found");
+
+  await MarketplaceProfile.updateMany(
+    {},
+    { $pull: { items: productId, savedItems: productId } }
+  );
+
+  await Item.findByIdAndDelete(productId);
+
+  return res.status(200).json(
+    new ApiResponse(200, {}, "Listing deleted successfully")
   );
 });
 
@@ -903,6 +925,7 @@ export {
   getAdminAllListings,
   approveAdminListing,
   rejectAdminListing,
+  deleteAdminListing,
   getPublicSellerProfile, 
   getMyFullProfile 
 };

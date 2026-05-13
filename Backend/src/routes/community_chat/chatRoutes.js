@@ -1,5 +1,5 @@
 import express from "express";
-//import { uploadRoomImage, uploadChatFile } from "../../utils/cloudinary.js";
+import multer from "multer";
 import { verifyJwt } from "../../middlewares/authentication.js";
 import {
   createRoom,
@@ -24,6 +24,11 @@ import {
 
 const router = express.Router();
 
+const chatFileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+});
+
 // Apply authentication middleware to ALL routes
 router.use(verifyJwt);
 
@@ -40,8 +45,8 @@ router.get("/rooms/search", searchRooms);
 // Message management
 router.get("/messages/:roomId", getMessages);
 router.post("/message/:roomId", sendMessage);
-//router.post("/upload/:roomId", uploadChatFile.single("file"), uploadFile);
-router.delete("/message/:messageId", deleteMessage); // ADD THIS LINE
+router.post("/upload/:roomId", chatFileUpload.single("file"), uploadFile);
+router.delete("/message/:messageId", deleteMessage);
 
 // Read status
 router.get("/unread/:roomId", getUnreadCount);

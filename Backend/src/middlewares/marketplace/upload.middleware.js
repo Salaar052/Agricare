@@ -2,12 +2,12 @@
 // 2. middlewares/upload.middleware.js
 // ============================================
 import multer from 'multer';
-//import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import createCloudinaryStorage from 'multer-storage-cloudinary';
 import cloudinary from '../../utils/cloudinary.js';
 
 // Configure Cloudinary storage for multer
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+const storage = createCloudinaryStorage({
+  cloudinary: { v2: cloudinary },
   params: {
     folder: 'marketplace',
     // Mobile galleries may include HEIC/HEIF (iOS) and some clients send octet-stream.

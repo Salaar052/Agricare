@@ -1,6 +1,7 @@
 import ChatRoom from "../../models/community_chat/ChatRoom.js";
 import Message from "../../models/community_chat/Message.js";
 import User from "../../models/auth/user.js";
+import { uploadChatFileToCloudinary } from "../../utils/cloudinary.js";
 
 const isAdminUser = (user) => {
   if (!user) return false;
@@ -327,6 +328,15 @@ export const uploadFile = async (req, res) => {
       fileUrl,
       readBy: [userId],
     });
+
+    const io = req.app.get("io");
+    if (io) {
+      const payload =
+        typeof saved.toObject === "function"
+          ? saved.toObject({ flattenMaps: true })
+          : saved;
+      io.to(String(roomId)).emit("newMessage", payload);
+    }
 
     res.json(saved);
   } catch (err) {

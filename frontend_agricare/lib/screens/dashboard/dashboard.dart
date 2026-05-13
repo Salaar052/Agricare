@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 import 'dart:ui';
-import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../../controllers/auth_controller.dart';
 import '../../controllers/main_nav_controller.dart';
@@ -361,28 +360,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         const Spacer(),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            IconButton(
-              icon:
-                  const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () {},
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
-        ),
         IconButton(
           icon: const Icon(Icons.logout_rounded, color: Colors.white),
           onPressed: () async {
@@ -501,165 +478,162 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
 
               // Content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(22, 56, 22, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Agri-Care badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.25),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF4ADE80),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Agri-Care',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+            // Content — Positioned so it never overflows during SliverAppBar collapse
+Positioned(
+  left: 22,
+  right: 22,
+  bottom: 20,                          // anchored to bottom, no overflow
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,    // only takes needed height
+    children: [
+      // Agri-Care badge
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.25),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFF4ADE80),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'Agri-Care',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 10),
 
-                    // Welcome greeting
-                    Obx(() => Text(
-                          'Good ${_getGreeting()},\n${authController.username.value.isNotEmpty ? authController.username.value : "Farmer"} 👋',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            height: 1.2,
-                            letterSpacing: -0.5,
-                          ),
-                        )),
-                    const SizedBox(height: 10),
+      // Welcome greeting
+      Obx(() => Text(
+            'Good ${_getGreeting()},\n${authController.username.value.isNotEmpty ? authController.username.value : "Farmer"} 👋',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+              letterSpacing: -0.5,
+            ),
+          )),
+      const SizedBox(height: 10),
 
-                    // Weather summary pill
-                    if (!_weatherLoading && _weather != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 0.8,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.place_rounded,
-                                color: Colors.white70, size: 13),
-                            const SizedBox(width: 4),
-                            Text(
-                              _locationName.isNotEmpty &&
-                                      _locationName != 'Unknown'
-                                  ? _locationName
-                                  : '–',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              width: 1,
-                              height: 12,
-                              color: Colors.white30,
-                            ),
-                            Text(
-                              '${theme.icon}  ${_weather!.skyLabel}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              width: 1,
-                              height: 12,
-                              color: Colors.white30,
-                            ),
-                            Text(
-                              _weather!.tempDisplay,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (_weatherLoading)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                                color: Colors.white.withOpacity(0.7),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Fetching weather...',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.75),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+      // Weather summary pill
+      if (!_weatherLoading && _weather != null)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 0.8,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.place_rounded, color: Colors.white70, size: 13),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  _locationName.isNotEmpty && _locationName != 'Unknown'
+                      ? _locationName
+                      : '–',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                width: 1, height: 12,
+                color: Colors.white30,
+              ),
+              Text(
+                '${theme.icon}  ${_weather!.skyLabel}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                width: 1, height: 12,
+                color: Colors.white30,
+              ),
+              Text(
+                _weather!.tempDisplay,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        )
+      else if (_weatherLoading)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 10, height: 10,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Fetching weather...',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.75),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+  ),
+),
             ],
           ),
         ),
@@ -1040,7 +1014,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.88,
+        childAspectRatio: 0.72,
       ),
       itemCount: features.length,
       itemBuilder: (context, i) => _buildFeatureCard(context, features[i]),

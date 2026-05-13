@@ -1,5 +1,6 @@
 
 import { getAdvisory } from '../../services/fertilizer_advisery/fertilizer_advisery.js';
+import { getCropInsightForUnlistedName } from '../../services/fertilizer_advisery/cropInsightGemini.js';
 
 /**
  * POST /api/advisory
@@ -20,7 +21,13 @@ export const getAdvisoryController = async (req, res, next) => {
     }
 
     const result = getAdvisory(crop, soil, weather);
-    return res.status(200).json(result);
+    const cropInsight = await getCropInsightForUnlistedName(crop);
+
+    return res.status(200).json({
+      ...result,
+      cropInsight: cropInsight?.tip ?? null,
+      cropDisplayName: cropInsight?.displayName ?? null,
+    });
   } catch (error) {
     next(error);
   }

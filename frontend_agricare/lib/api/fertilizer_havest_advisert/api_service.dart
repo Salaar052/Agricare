@@ -3,20 +3,21 @@ import 'package:http/http.dart' as http;
 import '../../api/api_config.dart';
 
 class ApiService {
-  static final String baseUrl = ApiConfig.fertilizerHarvestAdvisory;
+  static final String _advisoryUrl = ApiConfig.advisoryBase;
+  static final String _harvestUrl = ApiConfig.harvestBase;
 
   static const Map<String, String> _headers = {
     'Content-Type': 'application/json',
   };
 
-  /// POST /api/advisory
+  /// POST /api/v1/advisory
   static Future<AdvisoryResult> getAdvisory({
     required String crop,
     required SoilInput soil,
     required WeatherInput weather,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/advisory'),
+      Uri.parse(_advisoryUrl),
       headers: _headers,
       body: jsonEncode({
         'crop': crop,
@@ -33,13 +34,13 @@ class ApiService {
     }
   }
 
-  /// POST /api/harvest
+  /// POST /api/v1/harvest
   static Future<HarvestResult> getHarvestSuggestion({
     required String crop,
     required List<ForecastDay> forecast,
   }) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/harvest'),
+      Uri.parse(_harvestUrl),
       headers: _headers,
       body: jsonEncode({
         'crop': crop,
@@ -113,11 +114,15 @@ class AdvisoryResult {
   final String crop;
   final List<String> fertilizers;
   final List<PesticideAdvisory> pesticides;
+  final String? cropInsight;
+  final String? cropDisplayName;
 
   const AdvisoryResult({
     required this.crop,
     required this.fertilizers,
     required this.pesticides,
+    this.cropInsight,
+    this.cropDisplayName,
   });
 
   factory AdvisoryResult.fromJson(Map<String, dynamic> json) => AdvisoryResult(
@@ -126,6 +131,8 @@ class AdvisoryResult {
     pesticides: (json['pesticides'] as List? ?? [])
         .map((p) => PesticideAdvisory.fromJson(p))
         .toList(),
+    cropInsight: json['cropInsight'] as String?,
+    cropDisplayName: json['cropDisplayName'] as String?,
   );
 }
 
@@ -135,6 +142,8 @@ class HarvestResult {
   final String harvestDate;
   final int adjustmentDays;
   final String advice;
+  final String? cropInsight;
+  final String? cropDisplayName;
 
   const HarvestResult({
     required this.crop,
@@ -142,6 +151,8 @@ class HarvestResult {
     required this.harvestDate,
     required this.adjustmentDays,
     required this.advice,
+    this.cropInsight,
+    this.cropDisplayName,
   });
 
   factory HarvestResult.fromJson(Map<String, dynamic> json) => HarvestResult(
@@ -150,5 +161,7 @@ class HarvestResult {
     harvestDate: json['harvestDate'] ?? '',
     adjustmentDays: json['adjustmentDays'] ?? 0,
     advice: json['advice'] ?? '',
+    cropInsight: json['cropInsight'] as String?,
+    cropDisplayName: json['cropDisplayName'] as String?,
   );
 }

@@ -18,6 +18,7 @@ import {
   getAdminAllListings,
   approveAdminListing,
   rejectAdminListing,
+  deleteAdminListing,
   getPublicSellerProfile,
   getMyFullProfile
 } from "../../controllers/marketplace/marketplace.controllers.js";
@@ -39,6 +40,7 @@ marketplaceRouter.get("/admin/pending-items", getAdminPendingListings);
 marketplaceRouter.get("/admin/all-listings", getAdminAllListings);
 marketplaceRouter.put("/admin/items/:productId/approve", approveAdminListing);
 marketplaceRouter.put("/admin/items/:productId/reject", rejectAdminListing);
+marketplaceRouter.delete("/admin/items/:productId", deleteAdminListing);
 
 // Get all items (requires login to interact)
 marketplaceRouter.get("/items", getAllItems);

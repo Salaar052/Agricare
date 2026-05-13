@@ -285,12 +285,55 @@ class ChatController extends GetxController {
     try {
       isSendingMessage.value = true;
 
-      final message = await _chatApiService.uploadFile(
+      await _chatApiService.uploadFile(
         roomId: roomId,
         file: file,
       );
 
-      messages.add(message);
+      // Rely on `newMessage` socket event so the image appears once for everyone.
+
+      Get.snackbar(
+        'Success',
+        'File uploaded successfully!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Color(0xFF4A7C2C),
+        colorText: Colors.white,
+        margin: EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to upload file: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Color(0xFFD32F2F).withOpacity(0.9),
+        colorText: Colors.white,
+        margin: EdgeInsets.all(16),
+        borderRadius: 12,
+      );
+      return false;
+    } finally {
+      isSendingMessage.value = false;
+    }
+  }
+
+  /// Upload from bytes (web / gallery without local path)
+  Future<bool> uploadFileBytes(
+    String roomId,
+    List<int> bytes, {
+    String filename = 'image.jpg',
+  }) async {
+    try {
+      isSendingMessage.value = true;
+
+      await _chatApiService.uploadFileBytes(
+        roomId: roomId,
+        bytes: bytes,
+        filename: filename,
+      );
+
+      // Rely on `newMessage` socket event so the image appears once for everyone.
 
       Get.snackbar(
         'Success',

@@ -34,7 +34,7 @@ export const recommendCrop = async (req, res) => {
 
 export const getGrowthPlan = async (req, res) => {
   try {
-    const { cropName, soilData } = req.body;
+    const { cropName, soilData, planType, context } = req.body || {};
 
     // Validation
     if (!cropName || typeof cropName !== 'string') {
@@ -44,49 +44,38 @@ export const getGrowthPlan = async (req, res) => {
       });
     }
 
-    if (!soilData || typeof soilData !== 'object') {
+    // Soil data is optional here (weather-based flows might not have NPK/pH).
+    // If provided, ensure it's an object.
+    if (soilData !== undefined && (typeof soilData !== 'object' || soilData === null)) {
       return res.status(400).json({
         success: false,
-        error: "Soil data is required and must be an object"
+        error: "soilData must be an object when provided"
       });
     }
 
-    // Validate required soil parameters
-    const requiredParams = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall'];
-    const missingParams = requiredParams.filter(param => soilData[param] === undefined);
-    
-    if (missingParams.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: `Missing required soil parameters: ${missingParams.join(', ')}`
-      });
-    }
+    // Optional: planType hints which section the user tapped.
+    const safePlanType = typeof planType === 'string' && planType.trim()
+      ? planType.trim().toLowerCase()
+      : 'complete';
 
-    // Validate numeric values
-    for (const param of requiredParams) {
-      if (typeof soilData[param] !== 'number' || isNaN(soilData[param])) {
-        return res.status(400).json({
-          success: false,
-          error: `${param} must be a valid number`
-        });
-      }
-    }
+    const safeContext = (context && typeof context === 'object') ? context : {};
 
     // Generate growth plan using Gemini AI
-    const result = await generateCropGrowthPlan(cropName, soilData);
-
-    if (!result.success) {
-      return res.status(500).json({
-        success: false,
-        error: result.error || "Failed to generate growth plan"
-      });
-    }
+    const result = await generateCropGrowthPlan(cropName, soilData || {}, {
+      planType: safePlanType,
+      location: safeContext.location,
+      weather: safeContext.weather,
+      season: safeContext.season,
+      pakistanDateIso: safeContext.pakistanDate,
+    });
 
     // Return successful response
     res.json({
       success: true,
       cropName: cropName,
       growthPlan: result.growthPlan,
+      fallback: result.fallback === true,
+      ...(result.warning ? { warning: result.warning } : {}),
       generatedAt: new Date().toISOString()
     });
 
@@ -94,7 +83,7 @@ export const getGrowthPlan = async (req, res) => {
     console.error("Growth Plan Controller Error:", error);
     res.status(500).json({
       success: false,
-      error: "An unexpected error occurred while generating growth plan"
+      error: error?.message || "An unexpected error occurred while generating growth plan"
     });
   }
 };

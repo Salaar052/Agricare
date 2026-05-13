@@ -4,7 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:get/get.dart';
+
 import '../../api/api_config.dart';
+import '../../controllers/auth_controller.dart';
 
 class GrowthPlanScreen extends StatefulWidget {
   final String cropName;
@@ -22,79 +25,252 @@ class GrowthPlanScreen extends StatefulWidget {
   _GrowthPlanScreenState createState() => _GrowthPlanScreenState();
 }
 
-class _GrowthPlanScreenState extends State<GrowthPlanScreen>
-    with SingleTickerProviderStateMixin {
-  
-  late TabController _tabController;
-  String? _selectedPlanType;
-  bool _isLoading = false;
-  Map<String, dynamic>? _growthPlan;
-  String? _errorMessage;
+class _PlanFetchResult {
+  final String planType;
+  final Map<String, dynamic>? plan;
+  final bool fallback;
+  final String? warning;
+  final String? error;
+
+  const _PlanFetchResult({
+    required this.planType,
+    this.plan,
+    this.fallback = false,
+    this.warning,
+    this.error,
+  });
+}
+
+class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
+  String? _lastOpenedPlanType;
 
   String get apiUrl => ApiConfig.apiV1('/crop-recommendation/growth-plan');
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 8, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchGrowthPlan(String planType) async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-      _growthPlan = null;
-      _selectedPlanType = planType;
-    });
-
+  Future<_PlanFetchResult> _fetchGrowthPlanData(String planType) async {
     try {
+      AuthController? auth;
+      if (Get.isRegistered<AuthController>()) {
+        auth = Get.find<AuthController>();
+      }
+
+      final locationContext = (auth != null && auth.hasLocation)
+          ? {
+              'lat': auth.latitude.value,
+              'lng': auth.longitude.value,
+              'label': auth.locationLabel.value,
+            }
+          : null;
+
       final requestData = {
         'cropName': widget.cropName,
         'soilData': widget.soilData,
         'planType': planType,
+        'context': {
+          if (locationContext != null) 'location': locationContext,
+          if (widget.recommendationData['weather'] != null)
+            'weather': widget.recommendationData['weather'],
+          if (widget.recommendationData['season'] != null)
+            'season': widget.recommendationData['season'],
+        },
       };
 
-      print('📤 Fetching $planType plan for: ${widget.cropName}');
-
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(requestData),
-      ).timeout(
-        const Duration(seconds: 70),
-        onTimeout: () => throw Exception('Request timeout - AI taking too long'),
-      );
-
-      print('📥 Plan Status: ${response.statusCode}');
+      final response = await http
+          .post(
+            Uri.parse(apiUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode(requestData),
+          )
+          .timeout(
+            const Duration(seconds: 70),
+            onTimeout: () => throw Exception('Request timeout - AI taking too long'),
+          );
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        
         if (jsonData['success'] == true && jsonData['growthPlan'] != null) {
-          setState(() {
-            _growthPlan = jsonData['growthPlan'];
-            _isLoading = false;
-          });
-        } else {
-          throw Exception(jsonData['error'] ?? 'Failed to generate plan');
+          return _PlanFetchResult(
+            planType: planType,
+            plan: (jsonData['growthPlan'] as Map).cast<String, dynamic>(),
+            fallback: jsonData['fallback'] == true,
+            warning: (jsonData['warning'] as String?)?.trim(),
+          );
         }
-      } else {
-        final errorData = json.decode(response.body);
-        throw Exception(errorData['error'] ?? 'Server error');
+        return _PlanFetchResult(
+          planType: planType,
+          error: (jsonData['error'] as String?)?.trim() ?? 'Failed to generate plan',
+        );
       }
+
+      final errorData = json.decode(response.body);
+      return _PlanFetchResult(
+        planType: planType,
+        error: (errorData['error'] as String?)?.trim() ?? 'Server error',
+      );
     } catch (e) {
-      print('❌ Plan Error: $e');
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
+      return _PlanFetchResult(
+        planType: planType,
+        error: e.toString().replaceAll('Exception: ', ''),
+      );
     }
+  }
+
+  String _planTitle(String planType) {
+    switch (planType) {
+      case 'irrigation':
+        return 'Irrigation Plan';
+      case 'pesticides':
+        return 'Pesticides & Fertilizers';
+      case 'complete':
+      default:
+        return 'Complete Growth Plan';
+    }
+  }
+
+  Color _planAccent(String planType) {
+    switch (planType) {
+      case 'irrigation':
+        return Color(0xFF3B82F6);
+      case 'pesticides':
+        return Color(0xFFEF4444);
+      case 'complete':
+      default:
+        return Color(0xFF7C3AED);
+    }
+  }
+
+  String _fieldLabel(String key) {
+    switch (key) {
+      case 'activeIngredient':
+        return 'Active ingredient';
+      case 'timing':
+        return 'Timing';
+      case 'frequency':
+        return 'Frequency';
+      case 'method':
+        return 'Method';
+      case 'water':
+        return 'Water';
+      case 'dose':
+        return 'Dose';
+      case 'stage':
+        return 'Stage';
+      case 'when':
+        return 'When to apply';
+      case 'duration':
+        return 'Duration';
+      default:
+        return key;
+    }
+  }
+
+  void _openPlanModal(String planType) {
+    setState(() => _lastOpenedPlanType = planType);
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        final accent = _planAccent(planType);
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 24,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.fromLTRB(16, 14, 8, 14),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.08),
+                      border: Border(
+                        bottom: BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _planTitle(planType),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3748),
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                widget.cropName.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: Color(0xFF6B7280)),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: FutureBuilder<_PlanFetchResult>(
+                      future: _fetchGrowthPlanData(planType),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return _buildModalLoading();
+                        }
+                        final result = snapshot.data;
+                        if (result == null) {
+                          return _buildModalError(
+                            message: 'Failed to load plan.',
+                            onRetry: () => Navigator.pop(context),
+                          );
+                        }
+                        if (result.error != null || result.plan == null) {
+                          return _buildModalError(
+                            message: result.error ?? 'Failed to load plan.',
+                            onRetry: () {
+                              Navigator.pop(context);
+                              _openPlanModal(planType);
+                            },
+                          );
+                        }
+                        return _buildPlanContent(
+                          planType: planType,
+                          plan: result.plan!,
+                          accent: accent,
+                          fallback: result.fallback,
+                          warning: result.warning,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -129,17 +305,9 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen>
             ),
           ],
         ),
-        actions: [
-          if (_growthPlan != null)
-            IconButton(
-              icon: Icon(Icons.share, color: Color(0xFF4A7C2C)),
-              onPressed: () => _showShareOptions(),
-            ),
-        ],
+        actions: [],
       ),
-      body: _growthPlan == null
-          ? _buildInitialView()
-          : _buildPlanView(),
+      body: _buildInitialView(),
     );
   }
 
@@ -153,9 +321,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen>
         children: [
           _buildRecommendationHeader(),
           SizedBox(height: 20),
-          if (_isLoading) _buildLoadingState(),
-          if (_errorMessage != null) _buildErrorState(),
-          if (!_isLoading && _errorMessage == null) _buildOptionCards(),
+          _buildOptionCards(),
           SizedBox(height: 20),
         ],
       ),
@@ -301,10 +467,10 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen>
     required Color color,
     required String planType,
   }) {
-    final isSelected = _selectedPlanType == planType;
+    final isSelected = _lastOpenedPlanType == planType;
     
     return InkWell(
-      onTap: () => _fetchGrowthPlan(planType),
+      onTap: () => _openPlanModal(planType),
       child: AnimatedContainer(
         duration: Duration(milliseconds: 200),
         padding: EdgeInsets.all(20),
@@ -369,624 +535,120 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen>
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildModalLoading() {
     return Container(
-      margin: EdgeInsets.all(20),
-      padding: EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      padding: EdgeInsets.all(24),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CircularProgressIndicator(
-            color: Color(0xFF10B981),
-            strokeWidth: 3,
-          ),
-          SizedBox(height: 20),
+          SizedBox(height: 8),
+          CircularProgressIndicator(color: Color(0xFF10B981), strokeWidth: 3),
+          SizedBox(height: 16),
           Text(
-            'Generating Your Plan...',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
+            'Generating a concise plan…',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'This can take up to 60 seconds.',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), height: 1.4),
           ),
           SizedBox(height: 8),
-          Text(
-            'AI is creating a detailed plan\nThis may take up to 60 seconds',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF6B7280),
-              height: 1.5,
-            ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildModalError({required String message, required VoidCallback onRetry}) {
     return Container(
-      margin: EdgeInsets.all(20),
       padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Color(0xFFEF4444).withOpacity(0.3)),
-      ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 48),
-          SizedBox(height: 16),
+          Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 40),
+          SizedBox(height: 10),
           Text(
-            'Error Generating Plan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFEF4444),
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            _errorMessage!,
+            message,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF991B1B),
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF991B1B), fontWeight: FontWeight.w600),
           ),
-          SizedBox(height: 16),
+          SizedBox(height: 14),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _errorMessage = null;
-                _selectedPlanType = null;
-              });
-            },
+            onPressed: onRetry,
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFFEF4444),
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text('Try Again'),
+            child: Text('Retry'),
           ),
         ],
       ),
     );
   }
 
-  // ============================================
-  // PLAN VIEW - Tabbed Display
-  // ============================================
-
-  Widget _buildPlanView() {
-    final overview = _growthPlan!['overview'] ?? {};
-    
-    return Column(
-      children: [
-        // Overview Card
-        Container(
-          width: double.infinity,
-          margin: EdgeInsets.all(16),
-          padding: EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF059669)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0xFF10B981).withOpacity(0.3),
-                blurRadius: 12,
-                offset: Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('🌾', style: TextStyle(fontSize: 32)),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      overview['description'] ?? 'Comprehensive growth plan for ${widget.cropName}',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  _buildOverviewChip(Icons.timer, overview['totalGrowthPeriod'] ?? 'N/A'),
-                  SizedBox(width: 8),
-                  _buildOverviewChip(Icons.trending_up, overview['difficulty'] ?? 'N/A'),
-                  SizedBox(width: 8),
-                  _buildOverviewChip(Icons.wb_sunny, overview['bestSeason'] ?? 'N/A'),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Tab Bar
-        Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            isScrollable: true,
-            labelColor: Color(0xFF10B981),
-            unselectedLabelColor: Color(0xFF6B7280),
-            indicatorColor: Color(0xFF10B981),
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            unselectedLabelStyle: TextStyle(fontSize: 13),
-            tabs: [
-              Tab(text: 'Growth Stages'),
-              Tab(text: 'Irrigation'),
-              Tab(text: 'Fertilization'),
-              Tab(text: 'Pest Control'),
-              Tab(text: 'Soil Care'),
-              Tab(text: 'Harvesting'),
-              Tab(text: 'Weather'),
-              Tab(text: 'Costs & Tips'),
-            ],
-          ),
-        ),
-
-        // Tab Content
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildGrowthStagesTab(),
-              _buildIrrigationTab(),
-              _buildFertilizationTab(),
-              _buildPestDiseaseTab(),
-              _buildSoilManagementTab(),
-              _buildHarvestingTab(),
-              _buildWeatherTab(),
-              _buildCostAndTipsTab(),
-            ],
-          ),
-        ),
-      ],
-    );
+  List<String> _stringList(dynamic value) {
+    if (value is List) {
+      return value.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList();
+    }
+    return const [];
   }
 
-  Widget _buildOverviewChip(IconData icon, String label) {
-    return Expanded(
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 16),
-            SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ============================================
-  // TAB BUILDERS (Exact same as old code)
-  // ============================================
-
-  Widget _buildGrowthStagesTab() {
-    final stages = _growthPlan!['growthStages'] as List? ?? [];
-    
-    return ListView.builder(
-      padding: EdgeInsets.all(16),
-      itemCount: stages.length,
-      itemBuilder: (context, index) {
-        final stage = stages[index];
-        return _buildStageCard(index + 1, stage);
-      },
-    );
-  }
-
-  Widget _buildStageCard(int number, Map<String, dynamic> stage) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Color(0xFFF0FDF4),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$number',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        stage['stage'] ?? 'Stage $number',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF065F46),
-                        ),
-                      ),
-                      Text(
-                        stage['duration'] ?? 'Duration not specified',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  stage['description'] ?? '',
-                  style: TextStyle(fontSize: 14, height: 1.5),
-                ),
-                if (stage['keyActivities'] != null) ...[
-                  SizedBox(height: 12),
-                  Text(
-                    'Key Activities:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  ...(stage['keyActivities'] as List).map((activity) =>
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('• ', style: TextStyle(color: Color(0xFF10B981), fontSize: 16)),
-                          Expanded(child: Text(activity.toString(), style: TextStyle(fontSize: 13))),
-                        ],
-                      ),
-                    ),
-                  ).toList(),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildIrrigationTab() {
-    final irrigation = _growthPlan!['irrigationPlan'] ?? {};
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        _buildInfoCard('💧 Frequency', irrigation['frequency'] ?? 'Not specified', Color(0xFF3B82F6)),
-        SizedBox(height: 12),
-        _buildInfoCard('🚿 Method', irrigation['method'] ?? 'Not specified', Color(0xFF8B5CF6)),
-        SizedBox(height: 12),
-        _buildInfoCard('💦 Water Requirement', irrigation['waterRequirement'] ?? 'Not specified', Color(0xFF06B6D4)),
-        SizedBox(height: 16),
-        _buildListSection('⚠️ Critical Periods', irrigation['criticalPeriods'] ?? [], Color(0xFFEF4444)),
-        SizedBox(height: 16),
-        _buildListSection('💡 Irrigation Tips', irrigation['tips'] ?? [], Color(0xFF10B981)),
-      ],
-    );
-  }
-
-  Widget _buildFertilizationTab() {
-    final fertilization = _growthPlan!['fertilizationPlan'] ?? {};
-    final basal = fertilization['basalApplication'] ?? {};
-    final topDressing = fertilization['topDressing'] ?? [];
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        Text('Basal Application', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-        SizedBox(height: 12),
-        _buildNutrientCard('N', 'Nitrogen', basal['nitrogen'] ?? 'Not specified'),
-        SizedBox(height: 8),
-        _buildNutrientCard('P', 'Phosphorus', basal['phosphorus'] ?? 'Not specified'),
-        SizedBox(height: 8),
-        _buildNutrientCard('K', 'Potassium', basal['potassium'] ?? 'Not specified'),
-        SizedBox(height: 20),
-        if (topDressing.isNotEmpty) ...[
-          Text('Top Dressing Schedule', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-          SizedBox(height: 12),
-          ...topDressing.map((td) => Container(
-            margin: EdgeInsets.only(bottom: 12),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFFE5E7EB)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.schedule, color: Color(0xFF10B981), size: 20),
-                    SizedBox(width: 8),
-                    Text(td['stage'] ?? 'Not specified', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Text('Nutrients: ${td['nutrients'] ?? 'N/A'}', style: TextStyle(fontSize: 13)),
-                Text('Amount: ${td['amount'] ?? 'N/A'}', style: TextStyle(fontSize: 13)),
-              ],
-            ),
-          )).toList(),
-        ],
-        SizedBox(height: 16),
-        _buildListSection('🌱 Organic Options', fertilization['organicOptions'] ?? [], Color(0xFF10B981)),
-      ],
-    );
-  }
-
-  Widget _buildNutrientCard(String symbol, String name, String details) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Color(0xFFE5E7EB)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Color(0xFF10B981).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(symbol, style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 18)),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                SizedBox(height: 4),
-                Text(details, style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPestDiseaseTab() {
-    final pestManagement = _growthPlan!['pestAndDiseaseManagement'] ?? {};
-    final pests = pestManagement['commonPests'] ?? [];
-    final diseases = pestManagement['commonDiseases'] ?? [];
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        Text('Common Pests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-        SizedBox(height: 12),
-        ...pests.map((pest) => _buildPestDiseaseCard(pest, true)).toList(),
-        SizedBox(height: 20),
-        Text('Common Diseases', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-        SizedBox(height: 12),
-        ...diseases.map((disease) => _buildPestDiseaseCard(disease, false)).toList(),
-        SizedBox(height: 16),
-        _buildListSection('🌿 Organic Solutions', pestManagement['organicSolutions'] ?? [], Color(0xFF10B981)),
-      ],
-    );
-  }
-
-  Widget _buildPestDiseaseCard(Map<String, dynamic> item, bool isPest) {
+  Widget _buildBulletsCard({
+    required String title,
+    required List<String> bullets,
+    required Color accent,
+    IconData? icon,
+  }) {
+    if (bullets.isEmpty) return SizedBox.shrink();
     return Container(
       margin: EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 2)),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Color(0xFFE5E7EB)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(isPest ? '🐛' : '🦠', style: TextStyle(fontSize: 24)),
-              SizedBox(width: 8),
-              Expanded(child: Text(item['name'] ?? 'Unknown', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+              if (icon != null) ...[
+                Icon(icon, size: 18, color: accent),
+                SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Color(0xFF2D3748)),
+                ),
+              ),
             ],
           ),
-          SizedBox(height: 12),
-          _buildDetailRow('Symptoms', item['symptoms'] ?? 'N/A'),
-          SizedBox(height: 8),
-          _buildDetailRow('Prevention', item['prevention'] ?? 'N/A'),
-          SizedBox(height: 8),
-          _buildDetailRow('Treatment', item['treatment'] ?? 'N/A'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label + ':', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF10B981))),
-        SizedBox(height: 4),
-        Text(value, style: TextStyle(fontSize: 13, height: 1.4)),
-      ],
-    );
-  }
-
-  Widget _buildSoilManagementTab() {
-    final soil = _growthPlan!['soilManagement'] ?? {};
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        _buildListSection('🌍 Soil Preparation', soil['preparation'] ?? [], Color(0xFF92400E)),
-        SizedBox(height: 16),
-        _buildListSection('🔧 Maintenance Tasks', soil['maintenance'] ?? [], Color(0xFF7C2D12)),
-        SizedBox(height: 16),
-        _buildInfoCard('⚖️ pH Adjustment', soil['phAdjustment'] ?? 'Not specified', Color(0xFF8B5CF6)),
-        SizedBox(height: 12),
-        _buildInfoCard('🌿 Organic Matter', soil['organicMatter'] ?? 'Not specified', Color(0xFF10B981)),
-      ],
-    );
-  }
-
-  Widget _buildHarvestingTab() {
-    final harvest = _growthPlan!['harvestingGuide'] ?? {};
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        _buildListSection('✅ Maturity Indicators', harvest['maturityIndicators'] ?? [], Color(0xFF10B981)),
-        SizedBox(height: 16),
-        _buildInfoCard('✂️ Harvest Method', harvest['harvestMethod'] ?? 'Not specified', Color(0xFFF59E0B)),
-        SizedBox(height: 12),
-        _buildInfoCard('📦 Expected Yield', harvest['expectedYield'] ?? 'Not specified', Color(0xFF8B5CF6)),
-        SizedBox(height: 12),
-        _buildInfoCard('🏪 Storage Advice', harvest['storageAdvice'] ?? 'Not specified', Color(0xFF3B82F6)),
-        SizedBox(height: 16),
-        _buildListSection('📋 Post-Harvest Steps', harvest['postHarvest'] ?? [], Color(0xFF10B981)),
-      ],
-    );
-  }
-
-  Widget _buildWeatherTab() {
-    final weather = _growthPlan!['weatherConsiderations'] ?? {};
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        _buildInfoCard('🌡️ Temperature Management', weather['temperatureManagement'] ?? 'Not specified', Color(0xFFEF4444)),
-        SizedBox(height: 12),
-        _buildInfoCard('💧 Humidity Management', weather['humidityManagement'] ?? 'Not specified', Color(0xFF06B6D4)),
-        SizedBox(height: 12),
-        _buildInfoCard('☔ Rainfall Management', weather['rainfallManagement'] ?? 'Not specified', Color(0xFF3B82F6)),
-        SizedBox(height: 16),
-        _buildListSection('⚠️ Extreme Weather Protection', weather['extremeWeatherProtection'] ?? [], Color(0xFFF59E0B)),
-      ],
-    );
-  }
-
-  Widget _buildCostAndTipsTab() {
-    final cost = _growthPlan!['costEstimation'] ?? {};
-    final tips = _growthPlan!['proTips'] ?? [];
-    final warnings = _growthPlan!['warnings'] ?? [];
-    
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        Text('Cost Estimation', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF2D3748))),
-        SizedBox(height: 12),
-        _buildCostRow('Seed', cost['seedCost']),
-        _buildCostRow('Fertilizer', cost['fertilizerCost']),
-        _buildCostRow('Irrigation', cost['irrigationCost']),
-        _buildCostRow('Labor', cost['laborCost']),
-        Divider(height: 24),
-        _buildCostRow('Total Estimated', cost['totalEstimated'], isTotal: true),
-        SizedBox(height: 8),
-        _buildInfoCard('💰 Break-Even Point', cost['breakEvenPoint'] ?? 'Not specified', Color(0xFF10B981)),
-        SizedBox(height: 24),
-        _buildListSection('💡 Professional Tips', tips, Color(0xFF10B981)),
-        SizedBox(height: 16),
-        _buildListSection('⚠️ Important Warnings', warnings, Color(0xFFEF4444)),
-      ],
-    );
-  }
-
-  Widget _buildCostRow(String label, dynamic value, {bool isTotal = false}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: isTotal ? 16 : 14, fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(
-            value?.toString() ?? 'N/A',
-            style: TextStyle(
-              fontSize: isTotal ? 16 : 14,
-              fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
-              color: isTotal ? Color(0xFF10B981) : Color(0xFF6B7280),
+          SizedBox(height: 10),
+          ...bullets.map(
+            (b) => Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: EdgeInsets.only(top: 7),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      b,
+                      style: TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF374151)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -994,104 +656,310 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen>
     );
   }
 
-  // ============================================
-  // REUSABLE WIDGETS
-  // ============================================
-
-  Widget _buildInfoCard(String title, String content, Color color) {
+  Widget _buildKeyValueCard({
+    required String title,
+    required Color accent,
+    required Map<String, dynamic> data,
+    List<String> keys = const [],
+    List<String> bullets = const [],
+  }) {
     return Container(
-      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
-          SizedBox(height: 8),
-          Text(content, style: TextStyle(fontSize: 13, height: 1.5)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListSection(String title, List items, Color color) {
-    if (items.isEmpty) return SizedBox.shrink();
-    
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color)),
-          SizedBox(height: 12),
-          ...items.map((item) => Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: 6),
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: Color(0xFF2D3748))),
+          SizedBox(height: 10),
+          ...keys.map((k) {
+            final v = (data[k] ?? '').toString().trim();
+            if (v.isEmpty) return SizedBox.shrink();
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${_fieldLabel(k)}: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: accent)),
+                  Expanded(child: Text(v, style: TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF374151)))),
+                ],
+              ),
+            );
+          }),
+          if (bullets.isNotEmpty) ...[
+            SizedBox(height: 2),
+            ...bullets.map(
+              (b) => Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(top: 7),
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                    ),
+                    SizedBox(width: 10),
+                    Expanded(child: Text(b, style: TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF374151)))),
+                  ],
                 ),
-                SizedBox(width: 8),
-                Expanded(child: Text(item.toString(), style: TextStyle(fontSize: 13, height: 1.5))),
-              ],
-            ),
-          )).toList(),
-        ],
-      ),
-    );
-  }
-
-  void _showShareOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Share Growth Plan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 20),
-            ListTile(
-              leading: Icon(Icons.picture_as_pdf, color: Color(0xFFEF4444)),
-              title: Text('Export as PDF'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon('PDF Export');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.share, color: Color(0xFF10B981)),
-              title: Text('Share Text'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon('Text Sharing');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.email, color: Color(0xFF3B82F6)),
-              title: Text('Email Plan'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoon('Email');
-              },
+              ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanContent({
+    required String planType,
+    required Map<String, dynamic> plan,
+    required Color accent,
+    required bool fallback,
+    required String? warning,
+  }) {
+    final summary = (plan['summary'] is Map) ? (plan['summary'] as Map).cast<String, dynamic>() : <String, dynamic>{};
+    final summaryTitle = (summary['title'] ?? '').toString().trim();
+    final summaryBullets = _stringList(summary['bullets']);
+    final warnings = _stringList(plan['warnings']);
+
+    final content = <Widget>[];
+
+    if (fallback || (warning != null && warning.trim().isNotEmpty)) {
+      content.add(
+        Container(
+          margin: EdgeInsets.fromLTRB(16, 14, 16, 0),
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Color(0xFFFFFBEB),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Color(0xFFFDE68A)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: Color(0xFFB45309), size: 18),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  (warning != null && warning.trim().isNotEmpty)
+                      ? warning.trim()
+                      : 'AI response was limited — showing a safe fallback plan.',
+                  style: TextStyle(fontSize: 12.5, height: 1.4, color: Color(0xFF92400E), fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
         ),
+      );
+    }
+
+    content.add(
+      Padding(
+        padding: EdgeInsets.fromLTRB(16, 14, 16, 0),
+        child: Container(
+          padding: EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: accent.withOpacity(0.20)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (summaryTitle.isNotEmpty)
+                Text(
+                  summaryTitle,
+                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+                ),
+              if (summaryTitle.isNotEmpty && summaryBullets.isNotEmpty) SizedBox(height: 10),
+              if (summaryBullets.isNotEmpty)
+                ...summaryBullets.take(8).map(
+                      (b) => Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: EdgeInsets.only(top: 7),
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(child: Text(b, style: TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF374151)))),
+                          ],
+                        ),
+                      ),
+                    ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    content.add(SizedBox(height: 12));
+
+    if (planType == 'irrigation') {
+      final irrigation = (plan['irrigation'] is Map) ? (plan['irrigation'] as Map).cast<String, dynamic>() : <String, dynamic>{};
+      content.addAll([
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _buildBulletsCard(
+            title: 'Water Needs',
+            bullets: _stringList(irrigation['waterNeeds']),
+            accent: accent,
+            icon: Icons.water_drop,
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _buildBulletsCard(
+            title: 'Critical Periods',
+            bullets: _stringList(irrigation['criticalPeriods']),
+            accent: Color(0xFFEF4444),
+            icon: Icons.warning_amber_rounded,
+          ),
+        ),
+      ]);
+
+      final scheduleRaw = irrigation['schedule'];
+      final schedule = (scheduleRaw is List) ? scheduleRaw : const [];
+      for (final item in schedule) {
+        if (item is! Map) continue;
+        final m = item.cast<String, dynamic>();
+        content.add(
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _buildKeyValueCard(
+              title: (m['stage'] ?? 'Schedule').toString(),
+              accent: accent,
+              data: m,
+              keys: const ['timing', 'frequency', 'method', 'water'],
+              bullets: _stringList(m['bullets']),
+            ),
+          ),
+        );
+      }
+
+      content.add(
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _buildBulletsCard(
+            title: 'Do / Don’t',
+            bullets: _stringList(irrigation['doDonts']),
+            accent: accent,
+            icon: Icons.checklist,
+          ),
+        ),
+      );
+    } else if (planType == 'pesticides') {
+      final fertilizersRaw = plan['fertilizers'];
+      final fertilizers = (fertilizersRaw is List) ? fertilizersRaw : const [];
+      for (final f in fertilizers) {
+        if (f is! Map) continue;
+        final m = f.cast<String, dynamic>();
+        content.add(
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _buildKeyValueCard(
+              title: (m['name'] ?? 'Fertilizer').toString(),
+              accent: Color(0xFF10B981),
+              data: m,
+              keys: const ['stage', 'dose', 'method'],
+              bullets: _stringList(m['bullets']),
+            ),
+          ),
+        );
+      }
+
+      final pesticidesRaw = plan['pesticides'];
+      final pesticides = (pesticidesRaw is List) ? pesticidesRaw : const [];
+      for (final p in pesticides) {
+        if (p is! Map) continue;
+        final m = p.cast<String, dynamic>();
+        content.add(
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _buildKeyValueCard(
+              title: (m['target'] ?? 'Pest/Disease').toString(),
+              accent: Color(0xFFEF4444),
+              data: m,
+              keys: const ['activeIngredient', 'when', 'dose'],
+              bullets: [..._stringList(m['safety']), ..._stringList(m['bullets'])],
+            ),
+          ),
+        );
+      }
+
+      content.add(
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _buildBulletsCard(
+            title: 'IPM (First Choice)',
+            bullets: _stringList(plan['ipm']),
+            accent: Color(0xFF10B981),
+            icon: Icons.eco,
+          ),
+        ),
+      );
+    } else {
+      final stagesRaw = plan['stages'];
+      final stages = (stagesRaw is List) ? stagesRaw : const [];
+      for (final s in stages) {
+        if (s is! Map) continue;
+        final m = s.cast<String, dynamic>();
+        content.add(
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: _buildKeyValueCard(
+              title: (m['stage'] ?? 'Stage').toString(),
+              accent: accent,
+              data: m,
+              keys: const ['duration'],
+              bullets: _stringList(m['bullets']),
+            ),
+          ),
+        );
+      }
+
+      content.add(
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: _buildBulletsCard(
+            title: 'Quick Tips',
+            bullets: _stringList(plan['quickTips']),
+            accent: Color(0xFF10B981),
+            icon: Icons.lightbulb,
+          ),
+        ),
+      );
+    }
+
+    content.add(
+      Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        child: _buildBulletsCard(
+          title: 'Warnings',
+          bullets: warnings,
+          accent: Color(0xFFEF4444),
+          icon: Icons.health_and_safety,
+        ),
+      ),
+    );
+
+    content.add(SizedBox(height: 10));
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: content,
       ),
     );
   }

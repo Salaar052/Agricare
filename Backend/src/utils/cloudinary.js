@@ -35,11 +35,12 @@ export const uploadRoomToCloudinary = (file) => {
 export const uploadChatFileToCloudinary = (file) => {
   if (!file) return null;
 
+  const mime = typeof file.mimetype === "string" ? file.mimetype : "";
   let folder = "chat_files";
 
-  if (file.mimetype.startsWith("image/")) {
+  if (mime.startsWith("image/")) {
     folder = "chat_files/images";
-  } else if (file.mimetype.startsWith("video/")) {
+  } else if (mime.startsWith("video/")) {
     folder = "chat_files/videos";
   } else {
     folder = "chat_files/docs";

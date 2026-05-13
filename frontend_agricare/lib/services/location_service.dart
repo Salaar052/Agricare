@@ -219,6 +219,53 @@ class LocationService {
     return (position: position, weather: weather);
   }
 
+  /// Per-day max temperature (°C) and total precipitation (mm) from Open-Meteo.
+  Future<List<({double temp, double rain})>> getDailyMaxTempAndPrecip({
+    required double latitude,
+    required double longitude,
+    int days = 3,
+  }) async {
+    final d = days.clamp(1, 7);
+    try {
+      final uri = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast'
+        '?latitude=$latitude'
+        '&longitude=$longitude'
+        '&daily=temperature_2m_max,precipitation_sum'
+        '&forecast_days=$d'
+        '&timezone=auto',
+      );
+      final response = await http.get(uri).timeout(const Duration(seconds: 12));
+      if (response.statusCode != 200) {
+        return _defaultForecastRows(d);
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final daily = data['daily'] as Map<String, dynamic>?;
+      final temps = daily?['temperature_2m_max'] as List?;
+      final rains = daily?['precipitation_sum'] as List?;
+      if (temps == null || rains == null || temps.isEmpty) {
+        return _defaultForecastRows(d);
+      }
+      final out = <({double temp, double rain})>[];
+      for (var i = 0; i < d && i < temps.length && i < rains.length; i++) {
+        final t = (temps[i] as num?)?.toDouble();
+        final r = (rains[i] as num?)?.toDouble();
+        out.add((temp: t ?? 28.0, rain: r ?? 0.0));
+      }
+      while (out.length < d) {
+        out.add((temp: 28.0, rain: 0.0));
+      }
+      return out;
+    } catch (e) {
+      print('❌ LocationService.getDailyMaxTempAndPrecip error: $e');
+      return _defaultForecastRows(d);
+    }
+  }
+
+  List<({double temp, double rain})> _defaultForecastRows(int days) {
+    return List.generate(days, (i) => (temp: 28.0 + i * 0.5, rain: 0.0));
+  }
+
   // ── Helper: raw HTTP GET (reusable by other classes) ──────────────────────
   Future<http.Response?> httpGet(Uri uri) async {
     try {

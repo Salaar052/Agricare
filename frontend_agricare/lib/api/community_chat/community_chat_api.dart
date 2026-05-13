@@ -310,7 +310,7 @@ class ChatApiService {
     }
   }
 
-  /// Upload a file
+  /// Upload a file (mobile/desktop native file path)
   Future<Message> uploadFile({
     required String roomId,
     required File file,
@@ -333,6 +333,38 @@ class ChatApiService {
       } else {
         request.files.add(await http.MultipartFile.fromPath('file', file.path));
       }
+
+      if (_token != null) {
+        request.headers['Authorization'] = 'Bearer $_token';
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return Message.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to upload file: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error uploading file: $e');
+    }
+  }
+
+  /// Upload image/file from raw bytes (web & mobile)
+  Future<Message> uploadFileBytes({
+    required String roomId,
+    required List<int> bytes,
+    String filename = 'image.jpg',
+  }) async {
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/upload/$roomId'),
+      );
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
 
       if (_token != null) {
         request.headers['Authorization'] = 'Bearer $_token';

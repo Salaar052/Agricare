@@ -9,6 +9,14 @@ class AdvisoryResultScreen extends StatelessWidget {
 
   const AdvisoryResultScreen({super.key, required this.result});
 
+  String _cropTitle(AdvisoryResult r) {
+    final d = r.cropDisplayName?.trim();
+    if (d != null && d.isNotEmpty) return d;
+    final c = r.crop.trim();
+    if (c.isEmpty) return 'Your crop';
+    return c[0].toUpperCase() + c.substring(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,7 +70,7 @@ class AdvisoryResultScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        result.crop[0].toUpperCase() + result.crop.substring(1),
+                        _cropTitle(result),
                         style: GoogleFonts.playfairDisplay(
                           color: Colors.white,
                           fontSize: 26,
@@ -90,6 +98,34 @@ class AdvisoryResultScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          if (result.cropInsight != null && result.cropInsight!.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SectionHeader(
+                      title: 'AI crop note',
+                      icon: Icons.auto_awesome_rounded,
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      result.cropInsight!.trim(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
 
           const SizedBox(height: 24),
 

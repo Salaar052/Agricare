@@ -22,8 +22,16 @@ function getUploadedImages(req) {
 
   const pushFile = (file) => {
     if (!file) return;
-    const url = file.path || "";
-    const publicId = file.filename || "";
+    const url =
+      file.path ||
+      file.secure_url ||
+      (typeof file.url === "string" ? file.url : "") ||
+      "";
+    const publicId =
+      file.filename ||
+      file.public_id ||
+      (typeof file.publicId === "string" ? file.publicId : "") ||
+      "";
     if (!url && !publicId) return;
     out.push({ url, publicId });
   };
@@ -72,6 +80,9 @@ export const createNews = asyncHandler(async (req, res) => {
   const isPublished = normalizeBool(req.body?.isPublished, true);
 
   const images = getUploadedImages(req);
+  if (!images.length) {
+    throw new ApiError(400, "At least one image is required for news");
+  }
   const image = images[0] || { url: "", publicId: "" }; // legacy compatibility
 
   const publishedAt = isPublished ? new Date() : null;

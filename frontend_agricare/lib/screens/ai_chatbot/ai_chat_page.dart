@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../models/ai_chatbot/ai_chat_model.dart';
 import '../../api/ai_chat_service.dart';
+import '../../controllers/main_nav_controller.dart';
+import '../../routes/app_routes.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -802,6 +805,25 @@ class _AIChatScreenState extends State<AIChatScreen>
       ),
       child: Row(
         children: [
+          IconButton(
+            tooltip: 'Back to dashboard',
+            onPressed: () {
+              if (Get.isRegistered<MainNavController>()) {
+                Get.find<MainNavController>().goToDashboardRoot();
+              } else {
+                Get.offAllNamed(AppRoutes.dashboard);
+              }
+            },
+            icon: Icon(Icons.arrow_back_rounded, color: _forest, size: 22),
+            style: IconButton.styleFrom(
+              backgroundColor: _forest.withOpacity(0.06),
+              side: BorderSide(color: _border),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
           // Sidebar toggle
           GestureDetector(
             onTap: () => _toggleSidebar(!_isSidebarOpen),
