@@ -2,12 +2,15 @@ import axios from "axios";
 
 // ── Prompt Builder ───────────────────────────────────────────
 const buildPrompt = (userInput, plantNames) => {
-  const { temperature, space, sunlight, water } = userInput;
-
-  return `You are a friendly home gardening assistant. A user wants to grow vegetables at home.
-
-User's conditions:
-- Temperature: ${temperature}°C
+  const { temperature, space, sunlight, water, location } = userInput;
+  const locationLabel = location?.label;
+  const locationText = locationLabel
+    ? `- Location: ${locationLabel}\n`
+    : location && location.lat !== undefined && location.lng !== undefined
+    ? `- Location coordinates: ${location.lat}, ${location.lng}\n`
+    : "";
+  return `User's conditions:
+${locationText}- Temperature: ${temperature}°C
 - Space: ${space}
 - Sunlight availability: ${sunlight} sun
 - Water availability: ${water}

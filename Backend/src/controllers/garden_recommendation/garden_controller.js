@@ -14,7 +14,7 @@ const VALID_SPACES = ["balcony", "garden", "indoor"];
 const VALID_SUNLIGHT = ["full", "partial", "shade"];
 const VALID_WATER = ["low", "medium", "high"];
 
-const validateInput = ({ temperature, space, sunlight, water }) => {
+const validateInput = ({ temperature, space, sunlight, water, location }) => {
   const errors = [];
 
   if (temperature === undefined || temperature === null) {
@@ -43,6 +43,23 @@ const validateInput = ({ temperature, space, sunlight, water }) => {
     errors.push(`water must be one of: ${VALID_WATER.join(", ")}.`);
   }
 
+  if (location !== undefined && location !== null) {
+    if (typeof location !== "object") {
+      errors.push("location must be an object if provided.");
+    } else {
+      const { lat, lng, label } = location;
+      if (lat !== undefined && (typeof lat !== "number" || Number.isNaN(lat))) {
+        errors.push("location.lat must be a number.");
+      }
+      if (lng !== undefined && (typeof lng !== "number" || Number.isNaN(lng))) {
+        errors.push("location.lng must be a number.");
+      }
+      if (label !== undefined && typeof label !== "string") {
+        errors.push("location.label must be a string.");
+      }
+    }
+  }
+
   return errors;
 };
 
@@ -67,6 +84,7 @@ const recommendGardenPlants = async (req, res) => {
       space: req.body.space,
       sunlight: req.body.sunlight,
       water: req.body.water,
+      location: req.body.location,
     };
 
     // 2. Run rule-based filtering + scoring (zero AI)

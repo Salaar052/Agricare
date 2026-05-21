@@ -139,7 +139,7 @@ export default function CommunityModerationPage() {
     const res = await fetch(`/api/admin/community/users/${memberId}/block`, {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ reason: "Blocked by super admin", hardDelete: true }),
+      body: JSON.stringify({ roomId }),
     });
     const j = (await res.json().catch(() => null)) as { error?: string } | null;
     if (!res.ok) {

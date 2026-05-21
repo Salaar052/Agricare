@@ -65,12 +65,18 @@ class RecommendationRequest {
   final String space;
   final String sunlight;
   final String water;
+  final double? latitude;
+  final double? longitude;
+  final String? locationLabel;
 
   const RecommendationRequest({
     required this.temperature,
     required this.space,
     required this.sunlight,
     required this.water,
+    this.latitude,
+    this.longitude,
+    this.locationLabel,
   });
 
   Map<String, dynamic> toJson() => {
@@ -78,6 +84,13 @@ class RecommendationRequest {
         'space': space,
         'sunlight': sunlight,
         'water': water,
+        if (latitude != null && longitude != null)
+          'location': {
+            'lat': latitude,
+            'lng': longitude,
+            if (locationLabel != null && locationLabel!.trim().isNotEmpty)
+              'label': locationLabel!.trim(),
+          },
       };
 }
 

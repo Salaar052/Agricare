@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:get/get.dart';
+
+import '../../controllers/auth_controller.dart';
+import '../../services/location_service.dart';
 
 import '../../models/garden_recommendation/plant_model.dart';
 import '../../api/garden_recommendation/api_service.dart';
@@ -31,6 +35,15 @@ class _InputScreenState extends State<InputScreen>
   bool _isLoading = false;
   String? _errorMessage;
 
+  final AuthController _auth = Get.find<AuthController>();
+  final LocationService _locationService = LocationService();
+  final _locationController = TextEditingController();
+  double? _selectedLatitude;
+  double? _selectedLongitude;
+  String? _selectedLocationLabel;
+  bool _searchingLocation = false;
+  List<LocationSearchResult> _locationResults = const [];
+
   late AnimationController _shimmerController;
 
   @override
@@ -40,11 +53,20 @@ class _InputScreenState extends State<InputScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+    if (_auth.hasLocation) {
+      _selectedLatitude = _auth.latitude.value;
+      _selectedLongitude = _auth.longitude.value;
+      _selectedLocationLabel = _auth.locationLabel.value.isNotEmpty
+          ? _auth.locationLabel.value
+          : null;
+      _locationController.text = _selectedLocationLabel ?? '';
+    }
   }
 
   @override
   void dispose() {
     _shimmerController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -74,6 +96,9 @@ class _InputScreenState extends State<InputScreen>
       space: _selectedSpace!,
       sunlight: _selectedSunlight!,
       water: _selectedWater!,
+      latitude: _selectedLatitude,
+      longitude: _selectedLongitude,
+      locationLabel: _selectedLocationLabel,
     );
 
     final response = await ApiService().getRecommendations(request);
@@ -94,6 +119,166 @@ class _InputScreenState extends State<InputScreen>
     }
   }
 
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _locationResults = const [];
+    });
+    try {
+      final pos = await _locationService.getCurrentPosition();
+      if (pos == null) {
+        setState(() {
+          _errorMessage = 'Location permission denied. Please search manually.';
+          _isLoading = false;
+        });
+        return;
+      }
+      final label = await _locationService.reverseGeocodeLabel(pos.latitude, pos.longitude);
+      setState(() {
+        _selectedLatitude = pos.latitude;
+        _selectedLongitude = pos.longitude;
+        _selectedLocationLabel = label != 'Unknown' ? label : null;
+        _locationController.text = _selectedLocationLabel ?? '';
+        _isLoading = false;
+      });
+      _auth.setLocation(lat: pos.latitude, lng: pos.longitude, label: _selectedLocationLabel);
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Unable to resolve location. Please search manually.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _searchLocation(String query) async {
+    if (query.trim().isEmpty) return;
+    setState(() {
+      _searchingLocation = true;
+      _errorMessage = null;
+      _locationResults = const [];
+    });
+    try {
+      final results = await _locationService.searchLocations(query);
+      setState(() {
+        _locationResults = results;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Location search failed. Please try again.';
+      });
+    } finally {
+      setState(() {
+        _searchingLocation = false;
+      });
+    }
+  }
+
+  void _selectLocation(LocationSearchResult result) {
+    setState(() {
+      _selectedLatitude = result.latitude;
+      _selectedLongitude = result.longitude;
+      _selectedLocationLabel = result.label;
+      _locationController.text = result.label;
+      _locationResults = const [];
+    });
+    _auth.setLocation(lat: result.latitude, lng: result.longitude, label: result.label);
+    Navigator.of(context).pop();
+  }
+
+  void _showLocationPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: MediaQuery.of(context).viewInsets,
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              return Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Search location',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        )),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _locationController,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (value) async {
+                        await _searchLocation(value);
+                        setSheetState(() {});
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Enter city, region or address',
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search),
+                          onPressed: () async {
+                            await _searchLocation(_locationController.text);
+                            setSheetState(() {});
+                          },
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              await _useCurrentLocation();
+                              setSheetState(() {});
+                            },
+                            icon: const Icon(Icons.my_location_rounded),
+                            label: const Text('Use current location'),
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              backgroundColor: const Color(0xFF2D6A4F),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (_searchingLocation) ...[
+                      const Center(child: CircularProgressIndicator()),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_locationResults.isNotEmpty) ...[
+                      const Text('Choose a location',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 10),
+                      ..._locationResults.map((result) {
+                        return ListTile(
+                          title: Text(result.label),
+                          subtitle: Text('${result.latitude.toStringAsFixed(4)}, ${result.longitude.toStringAsFixed(4)}'),
+                          onTap: () => _selectLocation(result),
+                        );
+                      }).toList(),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -105,6 +290,10 @@ class _InputScreenState extends State<InputScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
+              _buildBackButton(context),
+              const SizedBox(height: 16),
+              _buildLocationCard(),
+              const SizedBox(height: 24),
               _buildHeader(),
               const SizedBox(height: 32),
               _buildTemperatureCard(),
@@ -178,6 +367,111 @@ class _InputScreenState extends State<InputScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBackButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.arrow_back_ios_new,
+                size: 18, color: Color(0xFF1B4332)),
+            SizedBox(width: 8),
+            Text('Back to Dashboard',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1B4332),
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationCard() {
+    final label = _selectedLocationLabel ?? 'Use your login location or search a location';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Location',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1B4332),
+              )),
+          const SizedBox(height: 10),
+          Text(label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF4A6655),
+              )),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _useCurrentLocation,
+                  icon: const Icon(Icons.my_location_rounded,
+                      color: Color(0xFF2D6A4F)),
+                  label: const Text('Use my location'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2D6A4F),
+                    side: const BorderSide(color: Color(0xFF2D6A4F)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _showLocationPicker,
+                  icon: const Icon(Icons.search_rounded, size: 18),
+                  label: const Text('Select location'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2D6A4F),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

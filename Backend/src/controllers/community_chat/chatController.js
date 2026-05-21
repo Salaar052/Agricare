@@ -414,8 +414,12 @@ export const deleteMessage = async (req, res) => {
       return res.status(404).json({ error: "Room not found" });
     }
 
-    // Check if user is sender or room admin
-    if (message.sender !== userId && room.admin !== userId) {
+    // Check if user is sender, room admin, or a site admin
+    if (
+      message.sender !== userId &&
+      room.admin !== userId &&
+      !isAdminUser(req.user)
+    ) {
       return res.status(403).json({ error: "Not authorized to delete this message" });
     }
 

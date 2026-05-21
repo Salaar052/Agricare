@@ -16,6 +16,8 @@ export default function SellersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [deletingSellerId, setDeletingSellerId] = useState<string | null>(null);
+
   const [q, setQ] = useState("");
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -48,6 +50,24 @@ export default function SellersPage() {
       setItems([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deleteSeller(id: string) {
+    if (!window.confirm("Permanently delete this seller?")) return;
+    setDeletingSellerId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/sellers/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(j?.error ?? "Delete failed");
+      }
+      await refresh();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDeletingSellerId(null);
     }
   }
 
@@ -108,6 +128,7 @@ export default function SellersPage() {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Status</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="align-top">
@@ -127,11 +148,20 @@ export default function SellersPage() {
                         {s.status}
                       </span>
                     </td>
+                    <td className="text-right">
+                      <button
+                        onClick={() => deleteSeller(s.id)}
+                        disabled={deletingSellerId === s.id}
+                        className="rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-50"
+                      >
+                        {deletingSellerId === s.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {filtered.length === 0 ? (
                   <tr>
-                    <td className="py-6 text-sm text-zinc-600" colSpan={4}>
+                    <td className="py-6 text-sm text-zinc-600" colSpan={5}>
                       No sellers found.
                     </td>
                   </tr>
