@@ -134,7 +134,10 @@ class _InputScreenState extends State<InputScreen>
         });
         return;
       }
-      final label = await _locationService.reverseGeocodeLabel(pos.latitude, pos.longitude);
+      final label = await _locationService.reverseGeocodeLabel(
+        pos.latitude,
+        pos.longitude,
+      );
       setState(() {
         _selectedLatitude = pos.latitude;
         _selectedLongitude = pos.longitude;
@@ -142,7 +145,11 @@ class _InputScreenState extends State<InputScreen>
         _locationController.text = _selectedLocationLabel ?? '';
         _isLoading = false;
       });
-      _auth.setLocation(lat: pos.latitude, lng: pos.longitude, label: _selectedLocationLabel);
+      _auth.setLocation(
+        lat: pos.latitude,
+        lng: pos.longitude,
+        label: _selectedLocationLabel,
+      );
     } catch (e) {
       setState(() {
         _errorMessage = 'Unable to resolve location. Please search manually.';
@@ -182,7 +189,11 @@ class _InputScreenState extends State<InputScreen>
       _locationController.text = result.label;
       _locationResults = const [];
     });
-    _auth.setLocation(lat: result.latitude, lng: result.longitude, label: result.label);
+    _auth.setLocation(
+      lat: result.latitude,
+      lng: result.longitude,
+      label: result.label,
+    );
     Navigator.of(context).pop();
   }
 
@@ -204,11 +215,13 @@ class _InputScreenState extends State<InputScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Search location',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        )),
+                    Text(
+                      'Search location',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: _locationController,
@@ -258,13 +271,17 @@ class _InputScreenState extends State<InputScreen>
                       const SizedBox(height: 12),
                     ],
                     if (_locationResults.isNotEmpty) ...[
-                      const Text('Choose a location',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text(
+                        'Choose a location',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       const SizedBox(height: 10),
                       ..._locationResults.map((result) {
                         return ListTile(
                           title: Text(result.label),
-                          subtitle: Text('${result.latitude.toStringAsFixed(4)}, ${result.longitude.toStringAsFixed(4)}'),
+                          subtitle: Text(
+                            '${result.latitude.toStringAsFixed(4)}, ${result.longitude.toStringAsFixed(4)}',
+                          ),
                           onTap: () => _selectLocation(result),
                         );
                       }).toList(),
@@ -389,15 +406,16 @@ class _InputScreenState extends State<InputScreen>
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            Icon(Icons.arrow_back_ios_new,
-                size: 18, color: Color(0xFF1B4332)),
+            Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF1B4332)),
             SizedBox(width: 8),
-            Text('Back to Dashboard',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1B4332),
-                )),
+            Text(
+              'Back to Dashboard',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1B4332),
+              ),
+            ),
           ],
         ),
       ),
@@ -405,7 +423,9 @@ class _InputScreenState extends State<InputScreen>
   }
 
   Widget _buildLocationCard() {
-    final label = _selectedLocationLabel ?? 'Use your login location or search a location';
+    final label =
+        _selectedLocationLabel ??
+        'Use your login location or search a location';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -423,27 +443,33 @@ class _InputScreenState extends State<InputScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Location',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF1B4332),
-              )),
+          const Text(
+            'Location',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1B4332),
+            ),
+          ),
           const SizedBox(height: 10),
-          Text(label,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF4A6655),
-              )),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF4A6655),
+            ),
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _useCurrentLocation,
-                  icon: const Icon(Icons.my_location_rounded,
-                      color: Color(0xFF2D6A4F)),
+                  icon: const Icon(
+                    Icons.my_location_rounded,
+                    color: Color(0xFF2D6A4F),
+                  ),
                   label: const Text('Use my location'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF2D6A4F),

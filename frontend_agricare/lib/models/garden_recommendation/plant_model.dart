@@ -7,11 +7,7 @@ class PlantAI {
   final List<String> cons;
   final String tips;
 
-  const PlantAI({
-    required this.pros,
-    required this.cons,
-    required this.tips,
-  });
+  const PlantAI({required this.pros, required this.cons, required this.tips});
 
   factory PlantAI.fromJson(Map<String, dynamic> json) {
     return PlantAI(
@@ -53,9 +49,7 @@ class PlantRecommendation {
       category: json['category'] ?? '',
       score: json['score'] ?? 0,
       maxScore: json['maxScore'] ?? 11,
-      ai: json['ai'] != null
-          ? PlantAI.fromJson(json['ai'])
-          : PlantAI.empty(),
+      ai: json['ai'] != null ? PlantAI.fromJson(json['ai']) : PlantAI.empty(),
     );
   }
 }
@@ -80,18 +74,18 @@ class RecommendationRequest {
   });
 
   Map<String, dynamic> toJson() => {
-        'temperature': temperature,
-        'space': space,
-        'sunlight': sunlight,
-        'water': water,
-        if (latitude != null && longitude != null)
-          'location': {
-            'lat': latitude,
-            'lng': longitude,
-            if (locationLabel != null && locationLabel!.trim().isNotEmpty)
-              'label': locationLabel!.trim(),
-          },
-      };
+    'temperature': temperature,
+    'space': space,
+    'sunlight': sunlight,
+    'water': water,
+    if (latitude != null && longitude != null)
+      'location': {
+        'lat': latitude,
+        'lng': longitude,
+        if (locationLabel != null && locationLabel!.trim().isNotEmpty)
+          'label': locationLabel!.trim(),
+      },
+  };
 }
 
 class RecommendationResponse {
@@ -119,10 +113,6 @@ class RecommendationResponse {
   }
 
   factory RecommendationResponse.error(String errorMsg) {
-    return RecommendationResponse(
-      success: false,
-      plants: [],
-      error: errorMsg,
-    );
+    return RecommendationResponse(success: false, plants: [], error: errorMsg);
   }
 }
