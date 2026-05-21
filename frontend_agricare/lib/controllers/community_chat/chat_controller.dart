@@ -76,9 +76,19 @@ class ChatController extends GetxController {
   }
 
   /// Create a new room
-  Future<bool> createRoom(String name, {File? image}) async {
+  Future<bool> createRoom(
+    String name, {
+    File? image,
+    List<int>? imageBytes,
+    String? imageFilename,
+  }) async {
     try {
-      final room = await _chatApiService.createRoom(name: name, image: image);
+      final room = await _chatApiService.createRoom(
+        name: name,
+        image: image,
+        imageBytes: imageBytes,
+        imageFilename: imageFilename,
+      );
 
       allRooms.insert(0, room);
       myRooms.insert(0, room);
@@ -409,6 +419,26 @@ class ChatController extends GetxController {
       print('Failed to get unread count: $e');
       return 0;
     }
+  }
+
+  /// Fetch room members with usernames for group detail page
+  Future<Map<String, dynamic>> getRoomMembersDetail(String roomId) async {
+    final data = await _chatApiService.getRoomMembers(roomId);
+    final admin = data['admin'];
+    final members = (data['members'] as List? ?? [])
+        .map((m) => Map<String, dynamic>.from(m as Map))
+        .toList();
+
+    String adminUsername = 'Unknown';
+    if (admin is Map) {
+      adminUsername = admin['username']?.toString() ?? 'Unknown';
+    }
+
+    return {
+      'adminUsername': adminUsername,
+      'members': members,
+      'room': data['room'],
+    };
   }
 
   /// Set current room

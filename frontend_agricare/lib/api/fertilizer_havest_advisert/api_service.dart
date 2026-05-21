@@ -29,8 +29,11 @@ class ApiService {
     if (response.statusCode == 200) {
       return AdvisoryResult.fromJson(jsonDecode(response.body));
     } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['error'] ?? 'Failed to get advisory');
+      final body = jsonDecode(response.body);
+      if (body['errors'] is List) {
+        throw Exception((body['errors'] as List).join('\n'));
+      }
+      throw Exception(body['error'] ?? 'Failed to get advisory');
     }
   }
 
@@ -116,6 +119,8 @@ class AdvisoryResult {
   final List<PesticideAdvisory> pesticides;
   final String? cropInsight;
   final String? cropDisplayName;
+  final String? aiSummary;
+  final bool aiGenerated;
 
   const AdvisoryResult({
     required this.crop,
@@ -123,6 +128,8 @@ class AdvisoryResult {
     required this.pesticides,
     this.cropInsight,
     this.cropDisplayName,
+    this.aiSummary,
+    this.aiGenerated = false,
   });
 
   factory AdvisoryResult.fromJson(Map<String, dynamic> json) => AdvisoryResult(
@@ -133,6 +140,8 @@ class AdvisoryResult {
         .toList(),
     cropInsight: json['cropInsight'] as String?,
     cropDisplayName: json['cropDisplayName'] as String?,
+    aiSummary: json['aiSummary'] as String?,
+    aiGenerated: json['aiGenerated'] == true,
   );
 }
 

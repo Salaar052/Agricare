@@ -45,9 +45,8 @@ class _DiscoverGroupsScreenState extends State<DiscoverGroupsScreen> {
         _chatController.fetchAllRooms();
         _chatController.fetchMyRooms();
 
-        // ✅ Navigate to group chat after joining
         Navigator.of(context).pushNamed(
-          AppRoutes.groupChat,
+          AppRoutes.groupDetail,
           arguments: {'room': room},
         );
       }

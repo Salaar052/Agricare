@@ -51,11 +51,13 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     setState(() => _isCreating = true);
 
     File? imageFile;
+    List<int>? imageBytes;
+    String? imageFilename;
     if (_groupImage != null) {
       if (kIsWeb) {
-        // On web, convert XFile to File
-        final bytes = await (_groupImage as XFile).readAsBytes();
-        imageFile = File.fromRawPath(bytes);
+        final xfile = _groupImage as XFile;
+        imageBytes = await xfile.readAsBytes();
+        imageFilename = xfile.name.isNotEmpty ? xfile.name : 'group_image.jpg';
       } else {
         imageFile = _groupImage as File;
       }
@@ -64,6 +66,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     final success = await _chatController.createRoom(
       _nameController.text.trim(),
       image: imageFile,
+      imageBytes: imageBytes,
+      imageFilename: imageFilename,
     );
 
     setState(() => _isCreating = false);

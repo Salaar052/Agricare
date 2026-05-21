@@ -1007,14 +1007,17 @@ Positioned(
       ),
     ];
 
+    final width = MediaQuery.of(context).size.width;
+    final crossAxisCount = width >= 900 ? 3 : (width >= 600 ? 3 : 2);
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
+        mainAxisExtent: 118,
       ),
       itemCount: features.length,
       itemBuilder: (context, i) => _buildFeatureCard(context, features[i]),
@@ -1025,6 +1028,9 @@ Positioned(
     return GestureDetector(
       onTap: () => Get.find<MainNavController>().navigate(f.route),
       child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
@@ -1057,10 +1063,12 @@ Positioned(
                 child: Text(f.emoji, style: const TextStyle(fontSize: 22)),
               ),
             ),
-            const SizedBox(height: 9),
+            const SizedBox(height: 8),
             Text(
               f.title,
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -1069,13 +1077,21 @@ Positioned(
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              f.subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFFADB5BD),
+            Expanded(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  f.subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFFADB5BD),
+                    height: 1.2,
+                  ),
+                ),
               ),
             ),
           ],

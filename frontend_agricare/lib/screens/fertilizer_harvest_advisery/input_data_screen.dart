@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../../services/location_service.dart';
 import '../../widgets/common_widets.dart';
 import '../../utils/theme.dart';
+import '../../utils/soil_validation.dart';
 import './advisery_screen.dart';
 import './harvest_screen.dart';
 
@@ -289,6 +290,8 @@ class _FertilizerHarvestAdvisoryInputScreenState
                             unit: 'mg/kg',
                             controller: _nitrogenController,
                             icon: Icons.circle,
+                            min: SoilValidation.nitrogenMin,
+                            max: SoilValidation.nitrogenMax,
                           ),
                           const SizedBox(height: 12),
                           NutrientField(
@@ -296,6 +299,8 @@ class _FertilizerHarvestAdvisoryInputScreenState
                             unit: 'mg/kg',
                             controller: _phosphorusController,
                             icon: Icons.circle,
+                            min: SoilValidation.phosphorusMin,
+                            max: SoilValidation.phosphorusMax,
                           ),
                           const SizedBox(height: 12),
                           NutrientField(
@@ -303,6 +308,8 @@ class _FertilizerHarvestAdvisoryInputScreenState
                             unit: 'mg/kg',
                             controller: _potassiumController,
                             icon: Icons.circle,
+                            min: SoilValidation.potassiumMin,
+                            max: SoilValidation.potassiumMax,
                           ),
                         ],
                       ),
@@ -354,6 +361,7 @@ class _FertilizerHarvestAdvisoryInputScreenState
                                   unit: '°C',
                                   controller: _temperatureController,
                                   icon: Icons.thermostat_rounded,
+                                  validationKind: 'temperature',
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -363,6 +371,7 @@ class _FertilizerHarvestAdvisoryInputScreenState
                                   unit: '%',
                                   controller: _humidityController,
                                   icon: Icons.water_drop_rounded,
+                                  validationKind: 'humidity',
                                 ),
                               ),
                             ],
@@ -407,8 +416,8 @@ class _FertilizerHarvestAdvisoryInputScreenState
                     LoadingButton(
                       isLoading: _isLoading,
                       onPressed: _getAdvisory,
-                      label: 'Get Advisory',
-                      icon: Icons.search_rounded,
+                      label: _isLoading ? 'Generating AI Advisory…' : 'Get AI Advisory',
+                      icon: Icons.auto_awesome_rounded,
                     ),
 
                     const SizedBox(height: 12),

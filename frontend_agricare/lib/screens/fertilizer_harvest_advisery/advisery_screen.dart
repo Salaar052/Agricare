@@ -99,6 +99,34 @@ class AdvisoryResultScreen extends StatelessWidget {
             ),
           ),
 
+          if (result.aiSummary != null && result.aiSummary!.trim().isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SectionHeader(
+                      title: 'AI Analysis',
+                      icon: Icons.psychology_rounded,
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      result.aiSummary!.trim(),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        height: 1.5,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
           if (result.cropInsight != null && result.cropInsight!.trim().isNotEmpty) ...[
             const SizedBox(height: 16),
             Card(
@@ -137,7 +165,9 @@ class AdvisoryResultScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SectionHeader(
-                    title: 'Fertilizer Recommendations',
+                    title: result.aiGenerated
+                        ? 'AI Fertilizer Recommendations'
+                        : 'Fertilizer Recommendations',
                     icon: Icons.science_rounded,
                     color: AppTheme.fertilizerColor,
                   ),
@@ -219,7 +249,7 @@ class AdvisoryResultScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'These recommendations are based on rule-based analysis. '
+                    'Recommendations are AI-generated from your soil and weather data. '
                     'Always consult a certified agronomist for critical decisions.',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,

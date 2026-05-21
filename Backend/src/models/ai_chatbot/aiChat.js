@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const aiChatSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -15,7 +21,7 @@ const aiChatSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-aiChatSchema.index({ createdAt: -1 });
+aiChatSchema.index({ userId: 1, createdAt: -1 });
 
 const AIChat = mongoose.model("AIChat", aiChatSchema);
 

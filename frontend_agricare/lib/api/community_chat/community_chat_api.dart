@@ -22,16 +22,28 @@ class ChatApiService {
   // Room Management
 
   /// Create a new public room
-  Future<ChatRoom> createRoom({required String name, File? image}) async {
+  Future<ChatRoom> createRoom({
+    required String name,
+    File? image,
+    List<int>? imageBytes,
+    String? imageFilename,
+  }) async {
     try {
       final uri = Uri.parse('$baseUrl/room');
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['name'] = name;
 
-      if (image != null) {
+      if (imageBytes != null && imageBytes.isNotEmpty) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'image',
+            imageBytes,
+            filename: imageFilename ?? 'group_image.jpg',
+          ),
+        );
+      } else if (image != null) {
         if (kIsWeb) {
-          // For web, add file from bytes
           final bytes = await image.readAsBytes();
           request.files.add(
             http.MultipartFile.fromBytes(
@@ -41,12 +53,11 @@ class ChatApiService {
             ),
           );
         } else {
-          // For mobile, add file from path
           request.files.add(
             await http.MultipartFile.fromPath(
               'image',
               image.path,
-              filename: image.path.split('/').last,
+              filename: image.path.split(RegExp(r'[/\\]')).last,
             ),
           );
         }

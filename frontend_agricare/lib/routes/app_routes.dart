@@ -1,6 +1,7 @@
 import 'package:frontend_agricare/screens/community_chat/create_group.dart';
 import 'package:frontend_agricare/screens/community_chat/discover_group.dart';
 import 'package:frontend_agricare/screens/community_chat/group_chat.dart';
+import 'package:frontend_agricare/screens/community_chat/group_detail_screen.dart';
 import 'package:frontend_agricare/screens/marketplace/marketplace_register_screen.dart';
 import 'package:get/get.dart';
 import '../screens/splash_screen.dart';
@@ -45,6 +46,7 @@ class AppRoutes {
   static const String createGroup = '/create-group';
   static const String discoverGroups = '/discover-groups';
   static const String groupChat = '/group-chat';
+  static const String groupDetail = '/group-detail';
   static const String gardenRecommendations = '/garden-recommendations';
   static const String fertilizerHarvestAdvisory =
       '/fertilizer-harvest-advisory';
@@ -146,6 +148,15 @@ class AppRoutes {
       page: () => MainNavigationScreen(
         initialIndex: 3,
         initialInnerRoute: AppRoutes.groupChat,
+        initialInnerArguments: Get.arguments,
+      ),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: groupDetail,
+      page: () => MainNavigationScreen(
+        initialIndex: 3,
+        initialInnerRoute: AppRoutes.groupDetail,
         initialInnerArguments: Get.arguments,
       ),
       middlewares: [AuthMiddleware()],

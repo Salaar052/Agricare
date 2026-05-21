@@ -212,10 +212,9 @@ class _ChatDashboardState extends State<ChatDashboard> {
 
         return InkWell(
           onTap: () {
-            _chatController.setCurrentRoom(room);
             Navigator.pushNamed(
               context,
-              AppRoutes.groupChat,
+              AppRoutes.groupDetail,
               arguments: {'room': room},
             ).then((_) => _refreshRooms());
           },

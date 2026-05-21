@@ -56,20 +56,27 @@ class OptionChip extends StatelessWidget {
                   )
                 ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 22)),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF374151),
+        child: SizedBox(
+          width: double.infinity,
+          height: 72,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 22)),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : const Color(0xFF374151),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -105,23 +112,26 @@ class OptionChipGroup extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: options.map((opt) {
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  right: opt == options.last ? 0 : 10,
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: options.map((opt) {
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: opt == options.last ? 0 : 10,
+                  ),
+                  child: OptionChip(
+                    value: opt['value']!,
+                    label: opt['label']!,
+                    icon: opt['icon']!,
+                    isSelected: selectedValue == opt['value'],
+                    onTap: () => onSelect(opt['value']!),
+                  ),
                 ),
-                child: OptionChip(
-                  value: opt['value']!,
-                  label: opt['label']!,
-                  icon: opt['icon']!,
-                  isSelected: selectedValue == opt['value'],
-                  onTap: () => onSelect(opt['value']!),
-                ),
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

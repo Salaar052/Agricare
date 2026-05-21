@@ -43,6 +43,7 @@ class MainNavController extends GetxController {
     AppRoutes.discoverGroups: 3,
     AppRoutes.createGroup: 3,
     AppRoutes.groupChat: 3,
+    AppRoutes.groupDetail: 3,
   };
 
   void switchTab(int index) {

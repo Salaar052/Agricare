@@ -13,6 +13,7 @@ import 'community_chat/chat_dashboard.dart';
 import 'community_chat/create_group.dart';
 import 'community_chat/discover_group.dart';
 import 'community_chat/group_chat.dart';
+import 'community_chat/group_detail_screen.dart';
 import 'testscreen.dart';
 
 import 'ai_chatbot/ai_chat_page.dart';
@@ -148,6 +149,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => const GroupChatScreen(),
+        );
+      case AppRoutes.groupDetail:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const GroupDetailScreen(),
         );
       default:
         return MaterialPageRoute(

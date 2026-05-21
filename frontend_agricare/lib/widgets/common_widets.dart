@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/theme.dart';
+import '../utils/soil_validation.dart';
 
 // ─── Section Header ────────────────────────────────────────────────────────────
 
@@ -49,6 +50,9 @@ class NutrientField extends StatelessWidget {
   final String unit;
   final TextEditingController controller;
   final IconData icon;
+  final double? min;
+  final double? max;
+  final String? validationKind;
 
   const NutrientField({
     super.key,
@@ -56,6 +60,9 @@ class NutrientField extends StatelessWidget {
     required this.unit,
     required this.controller,
     required this.icon,
+    this.min,
+    this.max,
+    this.validationKind,
   });
 
   @override
@@ -69,9 +76,15 @@ class NutrientField extends StatelessWidget {
         suffixText: unit,
       ),
       validator: (v) {
-        if (v == null || v.isEmpty) return '$label is required';
-        if (double.tryParse(v) == null) return 'Enter a valid number';
-        return null;
+        if (validationKind == 'temperature') {
+          return SoilValidation.validateTemperature(v);
+        }
+        if (validationKind == 'humidity') {
+          return SoilValidation.validateHumidity(v);
+        }
+        final lo = min ?? 0;
+        final hi = max ?? 500;
+        return SoilValidation.validateNutrient(v, label, lo, hi);
       },
     );
   }

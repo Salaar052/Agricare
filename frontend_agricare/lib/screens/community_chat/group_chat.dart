@@ -69,7 +69,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     await _chatController.fetchMessages(currentRoom.id);
     _chatController.markMessagesAsRead(currentRoom.id);
-    _scrollToBottom();
+    _scrollToBottom(force: true);
   }
 
   void connectSocket() {
@@ -139,15 +139,24 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     _messageController.clear();
   }
 
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+  void _scrollToBottom({bool force = false}) {
+    void doScroll() {
+      if (!_scrollController.hasClients) return;
+      final max = _scrollController.position.maxScrollExtent;
+      if (force) {
+        _scrollController.jumpTo(max);
+      } else {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          max,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => doScroll());
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (mounted) doScroll();
     });
   }
 

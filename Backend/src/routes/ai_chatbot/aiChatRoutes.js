@@ -6,10 +6,11 @@ import {
   sendMessage,
   deleteChat,
 } from "../../controllers/ai_chatbot/aiChatController.js";
+import { verifyJwt } from "../../middlewares/authentication.js";
 
 const aiChatbotRouter = express.Router();
 
-console.log("aichatbot route hit");
+aiChatbotRouter.use(verifyJwt);
 
 aiChatbotRouter.post("/new", createChat);
 aiChatbotRouter.get("/all", getAllChats);

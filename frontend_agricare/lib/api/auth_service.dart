@@ -3,6 +3,7 @@
 // ============================================
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
@@ -27,9 +28,14 @@ class AuthService {
   }
 
   Future<void> _initCookieJar() async {
+    // path_provider is not available on Flutter web
+    if (kIsWeb) {
+      cookieJar = CookieJar();
+      return;
+    }
     final appDocDir = await getApplicationDocumentsDirectory();
     cookieJar = PersistCookieJar(
-      storage: FileStorage("${appDocDir.path}/.cookies/")
+      storage: FileStorage("${appDocDir.path}/.cookies/"),
     );
   }
 

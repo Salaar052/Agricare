@@ -1,43 +1,51 @@
 import 'dart:convert';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../models/ai_chatbot/ai_chat_model.dart';
+import '../controllers/auth_controller.dart';
 import 'api_config.dart';
 
 class AIChatService {
   static String get baseUrl => ApiConfig.aiChatbotBase;
 
-  // Get all chat sessions
+  final AuthController _auth = Get.find<AuthController>();
+
+  Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        if (_auth.token.value.isNotEmpty)
+          'Authorization': 'Bearer ${_auth.token.value}',
+      };
+
   Future<List<ChatSession>> getAllChats() async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/all'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          List<ChatSession> chats = (data['chats'] as List)
+          return (data['chats'] as List)
               .map((chat) => ChatSession.fromJson(chat))
               .toList();
-          return chats;
-        } else {
-          throw Exception(data['error'] ?? 'Failed to load chats');
         }
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
+        throw Exception(data['error'] ?? data['message'] ?? 'Failed to load chats');
       }
+      if (response.statusCode == 401) {
+        throw Exception('Please log in to use AI chat');
+      }
+      throw Exception('Server error: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to load chats: $e');
     }
   }
 
-  // Create a new chat
   Future<ChatSession> createChat(String title) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/new'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers,
         body: json.encode({'title': title}),
       );
 
@@ -45,49 +53,48 @@ class AIChatService {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           return ChatSession.fromJson(data['chat']);
-        } else {
-          throw Exception(data['error'] ?? 'Failed to create chat');
         }
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
+        throw Exception(data['error'] ?? 'Failed to create chat');
       }
+      if (response.statusCode == 401) {
+        throw Exception('Please log in to use AI chat');
+      }
+      throw Exception('Server error: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to create chat: $e');
     }
   }
 
-  // Get messages for a specific chat
   Future<List<ChatMessage>> getMessages(String chatId) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/messages/$chatId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          List<ChatMessage> messages = (data['messages'] as List)
+          return (data['messages'] as List)
               .map((msg) => ChatMessage.fromJson(msg))
               .toList();
-          return messages;
-        } else {
-          throw Exception(data['error'] ?? 'Failed to load messages');
         }
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
+        throw Exception(data['error'] ?? 'Failed to load messages');
       }
+      if (response.statusCode == 403) {
+        throw Exception('You do not have access to this chat');
+      }
+      throw Exception('Server error: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to load messages: $e');
     }
   }
 
-  // Send a message
   Future<SendMessageResponse> sendMessage(String chatId, String message) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/send'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers,
         body: json.encode({'chatId': chatId, 'message': message}),
       );
 
@@ -95,23 +102,20 @@ class AIChatService {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           return SendMessageResponse.fromJson(data);
-        } else {
-          throw Exception(data['error'] ?? 'Failed to send message');
         }
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
+        throw Exception(data['error'] ?? 'Failed to send message');
       }
+      throw Exception('Server error: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to send message: $e');
     }
   }
 
-  // Delete a chat
   Future<void> deleteChat(String chatId) async {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl/delete/$chatId'),
-        headers: {'Content-Type': 'application/json'},
+        headers: _headers,
       );
 
       if (response.statusCode == 200) {
@@ -119,9 +123,9 @@ class AIChatService {
         if (data['success'] != true) {
           throw Exception(data['error'] ?? 'Failed to delete chat');
         }
-      } else {
-        throw Exception('Server error: ${response.statusCode}');
+        return;
       }
+      throw Exception('Server error: ${response.statusCode}');
     } catch (e) {
       throw Exception('Failed to delete chat: $e');
     }

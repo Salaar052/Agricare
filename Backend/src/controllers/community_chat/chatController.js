@@ -1,7 +1,10 @@
 import ChatRoom from "../../models/community_chat/ChatRoom.js";
 import Message from "../../models/community_chat/Message.js";
 import User from "../../models/auth/user.js";
-import { uploadChatFileToCloudinary } from "../../utils/cloudinary.js";
+import {
+  uploadChatFileToCloudinary,
+  uploadRoomToCloudinary,
+} from "../../utils/cloudinary.js";
 
 const isAdminUser = (user) => {
   if (!user) return false;
@@ -22,26 +25,33 @@ const ensureAdmin = (req, res) => {
 
 // Create room with image (public only)
 export const createRoom = async (req, res) => {
-   console.log("create room hit")
   try {
-   
     const { name } = req.body;
     const userId = req.user._id.toString();
 
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: "Group name is required" });
+    }
+
     const roomData = {
-      name,
+      name: String(name).trim(),
       isPublic: true,
       admin: userId,
       members: [userId],
     };
 
-    // 🔥 Save Cloudinary URL of room image
     if (req.file) {
-      roomData.image = req.file.path;
+      const imageUrl = await uploadRoomToCloudinary(req.file);
+      if (imageUrl) roomData.image = imageUrl;
     }
 
     const room = await ChatRoom.create(roomData);
-    res.json(room);
+    res.status(201).json({
+      ...room.toObject(),
+      memberCount: 1,
+      isCreator: true,
+      isMember: true,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -108,10 +118,29 @@ export const getRoomMembers = async (req, res) => {
       return res.status(403).json({ error: "You must be a member to view members" });
     }
 
-    res.json({ 
-      members: room.members, 
+    const memberUsers = await User.find({ _id: { $in: room.members } }).select(
+      "username profileImage"
+    );
+    const adminUser = await User.findById(room.admin).select("username profileImage");
+
+    res.json({
+      members: memberUsers.map((u) => ({
+        id: u._id.toString(),
+        username: u.username,
+        profileImage: u.profileImage || null,
+      })),
       memberCount: room.members.length,
-      admin: room.admin
+      admin: {
+        id: room.admin,
+        username: adminUser?.username || "Unknown",
+        profileImage: adminUser?.profileImage || null,
+      },
+      room: {
+        id: room._id.toString(),
+        name: room.name,
+        image: room.image || null,
+        createdAt: room.createdAt,
+      },
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

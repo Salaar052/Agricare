@@ -18,15 +18,15 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
-  final _nitrogenController    = TextEditingController();
-  final _phosphorusController  = TextEditingController();
-  final _potassiumController   = TextEditingController();
-  final _phController          = TextEditingController();
-  final _rainfallController    = TextEditingController();
+  final _nitrogenController = TextEditingController();
+  final _phosphorusController = TextEditingController();
+  final _potassiumController = TextEditingController();
+  final _phController = TextEditingController();
+  final _rainfallController = TextEditingController();
   final _temperatureController = TextEditingController();
-  final _humidityController    = TextEditingController();
+  final _humidityController = TextEditingController();
 
-  bool    _isLoading         = false;
+  bool _isLoading = false;
   String? _errorMessage;
 
   // ── Pakistan Soil Auto-fill ───────────────────────────────────────────────
@@ -51,9 +51,9 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
     setState(() {
       _usePakistanDefaults = value;
       if (value) {
-        _nitrogenController.text   = _pkN.toStringAsFixed(0);
+        _nitrogenController.text = _pkN.toStringAsFixed(0);
         _phosphorusController.text = _pkP.toStringAsFixed(0);
-        _potassiumController.text  = _pkK.toStringAsFixed(0);
+        _potassiumController.text = _pkK.toStringAsFixed(0);
       } else {
         _nitrogenController.clear();
         _phosphorusController.clear();
@@ -63,17 +63,17 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
   }
 
   // ── Palette ───────────────────────────────────────────────────────────────
-  static const _dark    = Color(0xFF1A2F0E);
-  static const _mid     = Color(0xFF4A7C2C);
-  static const _light   = Color(0xFF8FAF7A);
-  static const _bg      = Color(0xFFF4F8F0);
-  static const _bgCard  = Color(0xFFFFFFFF);
-  static const _border  = Color(0xFFDFEDD3);
+  static const _dark = Color(0xFF1A2F0E);
+  static const _mid = Color(0xFF4A7C2C);
+  static const _light = Color(0xFF8FAF7A);
+  static const _bg = Color(0xFFF4F8F0);
+  static const _bgCard = Color(0xFFFFFFFF);
+  static const _border = Color(0xFFDFEDD3);
   static const _surface = Color(0xFFEDF4E5);
 
   // Pakistan flag green accent
   static const _pkGreen = Color(0xFF01411C);
-  static const _pkBg    = Color(0xFFE8F5E3);
+  static const _pkBg = Color(0xFFE8F5E3);
   static const _pkBorder = Color(0xFF8FBD7A);
 
   // ── Animations ────────────────────────────────────────────────────────────
@@ -88,29 +88,45 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
     super.initState();
 
     _fadeCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
 
     // 5 sections: info card + pak-toggle + 3 field groups + button
     _staggerCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1000));
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
     _sectionFades = List.generate(6, (i) {
       final s = (i * 0.12).clamp(0.0, 0.88);
-      return Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(
+      return Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(
           parent: _staggerCtrl,
-          curve: Interval(s, (s + 0.28).clamp(0, 1), curve: Curves.easeOut)));
+          curve: Interval(s, (s + 0.28).clamp(0, 1), curve: Curves.easeOut),
+        ),
+      );
     });
     _sectionSlides = List.generate(6, (i) {
       final s = (i * 0.12).clamp(0.0, 0.88);
-      return Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
-          .animate(CurvedAnimation(
-              parent: _staggerCtrl,
-              curve: Interval(s, (s + 0.28).clamp(0, 1),
-                  curve: Curves.easeOutQuart)));
+      return Tween<Offset>(
+        begin: const Offset(0, 0.12),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: _staggerCtrl,
+          curve: Interval(
+            s,
+            (s + 0.28).clamp(0, 1),
+            curve: Curves.easeOutQuart,
+          ),
+        ),
+      );
     });
-    Future.delayed(const Duration(milliseconds: 150),
-        () { if (mounted) _staggerCtrl.forward(); });
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) _staggerCtrl.forward();
+    });
   }
 
   @override
@@ -131,17 +147,20 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final soilData = {
-        'N':           double.parse(_nitrogenController.text),
-        'P':           double.parse(_phosphorusController.text),
-        'K':           double.parse(_potassiumController.text),
+        'N': double.parse(_nitrogenController.text),
+        'P': double.parse(_phosphorusController.text),
+        'K': double.parse(_potassiumController.text),
         'temperature': double.parse(_temperatureController.text),
-        'humidity':    double.parse(_humidityController.text),
-        'ph':          double.parse(_phController.text),
-        'rainfall':    double.parse(_rainfallController.text),
+        'humidity': double.parse(_humidityController.text),
+        'ph': double.parse(_phController.text),
+        'rainfall': double.parse(_rainfallController.text),
       };
 
       final jsonData = await CropRecommendationApi.predict(
@@ -203,8 +222,7 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: _bgCard,
         title: Row(
           children: [
@@ -214,34 +232,48 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
                 color: const Color(0xFFFEE2E2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.error_rounded,
-                  color: Color(0xFFDC2626), size: 22),
+              child: const Icon(
+                Icons.error_rounded,
+                color: Color(0xFFDC2626),
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
-            const Text('Connection Error',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: _dark)),
+            const Text(
+              'Connection Error',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: _dark,
+              ),
+            ),
           ],
         ),
-        content: Text(message,
-            style: const TextStyle(
-                fontSize: 13, color: Color(0xFF5A7A45), height: 1.6)),
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Color(0xFF5A7A45),
+            height: 1.6,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
               decoration: BoxDecoration(
-                  color: _surface,
-                  borderRadius: BorderRadius.circular(20)),
-              child: const Text('Close',
-                  style: TextStyle(
-                      color: _mid,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
+                color: _surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  color: _mid,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -264,9 +296,10 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
               child: Text(
                 'Pakistan Soil Defaults',
                 style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: _dark),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: _dark,
+                ),
               ),
             ),
           ],
@@ -278,17 +311,29 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
             const Text(
               'These values reflect the typical nutrient levels found in Pakistani agricultural soil, based on AARI Punjab data, FAO assessments, and published soil studies.',
               style: TextStyle(
-                  fontSize: 12.5, color: Color(0xFF5A7A45), height: 1.6),
+                fontSize: 12.5,
+                color: Color(0xFF5A7A45),
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 14),
-            _infoRow('Nitrogen (N)', '${_pkN.toStringAsFixed(0)} kg/ha',
-                'Low — Pakistani soils are broadly N-deficient'),
+            _infoRow(
+              'Nitrogen (N)',
+              '${_pkN.toStringAsFixed(0)} kg/ha',
+              'Low — Pakistani soils are broadly N-deficient',
+            ),
             const SizedBox(height: 8),
-            _infoRow('Phosphorus (P)', '${_pkP.toStringAsFixed(0)} kg/ha',
-                'Low — Most soils are calcareous, limiting P availability'),
+            _infoRow(
+              'Phosphorus (P)',
+              '${_pkP.toStringAsFixed(0)} kg/ha',
+              'Low — Most soils are calcareous, limiting P availability',
+            ),
             const SizedBox(height: 8),
-            _infoRow('Potassium (K)', '${_pkK.toStringAsFixed(0)} kg/ha',
-                'Adequate — Punjab soils typically range 199–361 kg/ha'),
+            _infoRow(
+              'Potassium (K)',
+              '${_pkK.toStringAsFixed(0)} kg/ha',
+              'Adequate — Punjab soils typically range 199–361 kg/ha',
+            ),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(10),
@@ -299,10 +344,7 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
               ),
               child: const Text(
                 '💡 These are baseline soil values before fertiliser application. If you have a soil test report, use those values instead for better accuracy.',
-                style: TextStyle(
-                    fontSize: 11.5,
-                    color: _pkGreen,
-                    height: 1.55),
+                style: TextStyle(fontSize: 11.5, color: _pkGreen, height: 1.55),
               ),
             ),
           ],
@@ -311,16 +353,19 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
               decoration: BoxDecoration(
-                  color: _surface,
-                  borderRadius: BorderRadius.circular(20)),
-              child: const Text('Got it',
-                  style: TextStyle(
-                      color: _mid,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13)),
+                color: _surface,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Got it',
+                style: TextStyle(
+                  color: _mid,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ),
         ],
@@ -333,10 +378,13 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 6, height: 6,
+          width: 6,
+          height: 6,
           margin: const EdgeInsets.only(top: 5),
           decoration: const BoxDecoration(
-              color: _pkGreen, shape: BoxShape.circle),
+            color: _pkGreen,
+            shape: BoxShape.circle,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -345,22 +393,33 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
             children: [
               Row(
                 children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: _dark)),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: _dark,
+                    ),
+                  ),
                   const SizedBox(width: 6),
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: _pkGreen)),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                      color: _pkGreen,
+                    ),
+                  ),
                 ],
               ),
-              Text(note,
-                  style: const TextStyle(
-                      fontSize: 11, color: Color(0xFF8FAF7A), height: 1.4)),
+              Text(
+                note,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF8FAF7A),
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
         ),
@@ -396,125 +455,135 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
                       const SizedBox(height: 24),
 
                       // Section 1: NPK
-                      _anim(2, _buildFieldGroup(
-                        title: 'Soil Nutrients (NPK)',
-                        icon: Icons.grass_rounded,
-                        color: const Color(0xFF16A34A),
-                        badge: _usePakistanDefaults ? 'Auto-filled 🇵🇰' : null,
-                        fields: [
-                          SoilInputField(
-                            controller: _nitrogenController,
-                            label: 'Nitrogen (N)',
-                            hint: 'e.g. 40',
-                            icon: Icons.grass_rounded,
-                            suffix: 'kg/ha',
-                            minValue: 0,
-                            maxValue: 140,
-                            rangeLabel: '0 – 140',
-                            description:
-                                'Amount of nitrogen available in soil.',
-                            readOnly: _usePakistanDefaults,
-                          ),
-                          const SizedBox(height: 16),
-                          SoilInputField(
-                            controller: _phosphorusController,
-                            label: 'Phosphorus (P)',
-                            hint: 'e.g. 50',
-                            icon: Icons.water_drop_rounded,
-                            suffix: 'kg/ha',
-                            minValue: 5,
-                            maxValue: 145,
-                            rangeLabel: '5 – 145',
-                            description:
-                                'Phosphorus promotes root development.',
-                            readOnly: _usePakistanDefaults,
-                          ),
-                          const SizedBox(height: 16),
-                          SoilInputField(
-                            controller: _potassiumController,
-                            label: 'Potassium (K)',
-                            hint: 'e.g. 43',
-                            icon: Icons.eco_rounded,
-                            suffix: 'kg/ha',
-                            minValue: 5,
-                            maxValue: 205,
-                            rangeLabel: '5 – 205',
-                            description:
-                                'Potassium improves water and disease resistance.',
-                            readOnly: _usePakistanDefaults,
-                          ),
-                        ],
-                      )),
+                      _anim(
+                        2,
+                        _buildFieldGroup(
+                          title: 'Soil Nutrients (NPK)',
+                          icon: Icons.grass_rounded,
+                          color: const Color(0xFF16A34A),
+                          badge: _usePakistanDefaults
+                              ? 'Auto-filled 🇵🇰'
+                              : null,
+                          fields: [
+                            SoilInputField(
+                              controller: _nitrogenController,
+                              label: 'Nitrogen (N)',
+                              hint: 'e.g. 40',
+                              icon: Icons.grass_rounded,
+                              suffix: 'kg/ha',
+                              minValue: 0,
+                              maxValue: 140,
+                              rangeLabel: '0 – 140',
+                              description:
+                                  'Amount of nitrogen available in soil.',
+                              readOnly: _usePakistanDefaults,
+                            ),
+                            const SizedBox(height: 16),
+                            SoilInputField(
+                              controller: _phosphorusController,
+                              label: 'Phosphorus (P)',
+                              hint: 'e.g. 50',
+                              icon: Icons.water_drop_rounded,
+                              suffix: 'kg/ha',
+                              minValue: 5,
+                              maxValue: 145,
+                              rangeLabel: '5 – 145',
+                              description:
+                                  'Phosphorus promotes root development.',
+                              readOnly: _usePakistanDefaults,
+                            ),
+                            const SizedBox(height: 16),
+                            SoilInputField(
+                              controller: _potassiumController,
+                              label: 'Potassium (K)',
+                              hint: 'e.g. 43',
+                              icon: Icons.eco_rounded,
+                              suffix: 'kg/ha',
+                              minValue: 5,
+                              maxValue: 205,
+                              rangeLabel: '5 – 205',
+                              description:
+                                  'Potassium improves water and disease resistance.',
+                              readOnly: _usePakistanDefaults,
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 14),
 
                       // Section 2: Soil properties
-                      _anim(3, _buildFieldGroup(
-                        title: 'Soil Properties',
-                        icon: Icons.science_rounded,
-                        color: const Color(0xFF7C3AED),
-                        fields: [
-                          SoilInputField(
-                            controller: _phController,
-                            label: 'pH Level',
-                            hint: 'e.g. 6.5',
-                            icon: Icons.science_rounded,
-                            suffix: 'pH',
-                            minValue: 0,
-                            maxValue: 14,
-                            rangeLabel: '0 – 14',
-                            description:
-                                'Neutral (7.0) is ideal for most crops. Most crops prefer 6–7.',
-                          ),
-                        ],
-                      )),
+                      _anim(
+                        3,
+                        _buildFieldGroup(
+                          title: 'Soil Properties',
+                          icon: Icons.science_rounded,
+                          color: const Color(0xFF7C3AED),
+                          fields: [
+                            SoilInputField(
+                              controller: _phController,
+                              label: 'pH Level',
+                              hint: 'e.g. 6.5',
+                              icon: Icons.science_rounded,
+                              suffix: 'pH',
+                              minValue: 0,
+                              maxValue: 14,
+                              rangeLabel: '0 – 14',
+                              description:
+                                  'Neutral (7.0) is ideal for most crops. Most crops prefer 6–7.',
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 14),
 
                       // Section 3: Environmental
-                      _anim(4, _buildFieldGroup(
-                        title: 'Environmental Factors',
-                        icon: Icons.wb_sunny_rounded,
-                        color: const Color(0xFFD97706),
-                        fields: [
-                          SoilInputField(
-                            controller: _temperatureController,
-                            label: 'Temperature',
-                            hint: 'e.g. 25',
-                            icon: Icons.thermostat_rounded,
-                            suffix: '°C',
-                            minValue: 0,
-                            maxValue: 50,
-                            rangeLabel: '0 – 50°C',
-                            description:
-                                'Average temperature during the growing season.',
-                          ),
-                          const SizedBox(height: 16),
-                          SoilInputField(
-                            controller: _humidityController,
-                            label: 'Humidity',
-                            hint: 'e.g. 82',
-                            icon: Icons.water_rounded,
-                            suffix: '%',
-                            minValue: 14,
-                            maxValue: 100,
-                            rangeLabel: '14 – 100%',
-                            description:
-                                'Relative humidity as a percentage.',
-                          ),
-                          const SizedBox(height: 16),
-                          SoilInputField(
-                            controller: _rainfallController,
-                            label: 'Rainfall',
-                            hint: 'e.g. 202',
-                            icon: Icons.grain_rounded,
-                            suffix: 'mm',
-                            minValue: 20,
-                            maxValue: 300,
-                            rangeLabel: '20 – 300mm',
-                            description:
-                                'Average annual rainfall in millimetres.',
-                          ),
-                        ],
-                      )),
+                      _anim(
+                        4,
+                        _buildFieldGroup(
+                          title: 'Environmental Factors',
+                          icon: Icons.wb_sunny_rounded,
+                          color: const Color(0xFFD97706),
+                          fields: [
+                            SoilInputField(
+                              controller: _temperatureController,
+                              label: 'Temperature',
+                              hint: 'e.g. 25',
+                              icon: Icons.thermostat_rounded,
+                              suffix: '°C',
+                              minValue: 0,
+                              maxValue: 50,
+                              rangeLabel: '0 – 50°C',
+                              description:
+                                  'Average temperature during the growing season.',
+                            ),
+                            const SizedBox(height: 16),
+                            SoilInputField(
+                              controller: _humidityController,
+                              label: 'Humidity',
+                              hint: 'e.g. 82',
+                              icon: Icons.water_rounded,
+                              suffix: '%',
+                              minValue: 14,
+                              maxValue: 100,
+                              rangeLabel: '14 – 100%',
+                              description: 'Relative humidity as a percentage.',
+                            ),
+                            const SizedBox(height: 16),
+                            SoilInputField(
+                              controller: _rainfallController,
+                              label: 'Rainfall',
+                              hint: 'e.g. 202',
+                              icon: Icons.grain_rounded,
+                              suffix: 'mm',
+                              minValue: 20,
+                              maxValue: 300,
+                              rangeLabel: '20 – 300mm',
+                              description:
+                                  'Average annual rainfall in millimetres.',
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 28),
 
                       // Submit button
@@ -547,8 +616,11 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
               shape: BoxShape.circle,
               border: Border.all(color: _border),
             ),
-            child: const Icon(Icons.arrow_back_ios_new_rounded,
-                size: 15, color: _dark),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 15,
+              color: _dark,
+            ),
           ),
         ),
       ),
@@ -592,8 +664,11 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
               color: const Color(0xFF6BAE3E).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.science_rounded,
-                color: Color(0xFF9DE05A), size: 22),
+            child: const Icon(
+              Icons.science_rounded,
+              color: Color(0xFF9DE05A),
+              size: 22,
+            ),
           ),
           const SizedBox(width: 14),
           const Expanded(
@@ -653,7 +728,8 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
         children: [
           // Flag + icon
           Container(
-            width: 42, height: 42,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: _usePakistanDefaults
                   ? _pkGreen.withOpacity(0.12)
@@ -687,18 +763,21 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
                     GestureDetector(
                       onTap: _showPakistanInfoDialog,
                       child: Container(
-                        width: 18, height: 18,
+                        width: 18,
+                        height: 18,
                         decoration: BoxDecoration(
                           color: _usePakistanDefaults
                               ? _pkGreen.withOpacity(0.15)
                               : _border,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.info_outline_rounded,
-                            size: 11,
-                            color: _usePakistanDefaults
-                                ? _pkGreen
-                                : const Color(0xFF8FAF7A)),
+                        child: Icon(
+                          Icons.info_outline_rounded,
+                          size: 11,
+                          color: _usePakistanDefaults
+                              ? _pkGreen
+                              : const Color(0xFF8FAF7A),
+                        ),
                       ),
                     ),
                   ],
@@ -764,7 +843,8 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
           Row(
             children: [
               Container(
-                width: 32, height: 32,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(9),
@@ -790,7 +870,9 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
                   duration: const Duration(milliseconds: 250),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: _pkBg,
                       borderRadius: BorderRadius.circular(20),
@@ -799,9 +881,10 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
                     child: Text(
                       badge,
                       style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: _pkGreen),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        color: _pkGreen,
+                      ),
                     ),
                   ),
                 ),
@@ -814,8 +897,7 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
           // Auto-fill notice strip
           if (badge != null) ...[
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
                 color: _pkBg,
                 borderRadius: BorderRadius.circular(10),
@@ -823,16 +905,16 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
               ),
               child: Row(
                 children: const [
-                  Icon(Icons.lock_outline_rounded,
-                      size: 13, color: _pkGreen),
+                  Icon(Icons.lock_outline_rounded, size: 13, color: _pkGreen),
                   SizedBox(width: 7),
                   Expanded(
                     child: Text(
                       'NPK values are filled with typical Pakistan soil averages. Disable the toggle above to enter custom values.',
                       style: TextStyle(
-                          fontSize: 11.5,
-                          color: _pkGreen,
-                          height: 1.45),
+                        fontSize: 11.5,
+                        color: _pkGreen,
+                        height: 1.45,
+                      ),
                     ),
                   ),
                 ],
@@ -861,20 +943,27 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
               disabledBackgroundColor: _light.withOpacity(0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               shadowColor: _mid.withOpacity(0.3),
             ),
             child: _isLoading
                 ? const SizedBox(
-                    width: 22, height: 22,
+                    width: 22,
+                    height: 22,
                     child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2.5),
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
                   )
                 : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.auto_awesome_rounded,
-                          size: 18, color: Colors.white),
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
                       SizedBox(width: 10),
                       Text(
                         'Analyse & Get Recommendations',
@@ -901,7 +990,7 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
 
   // ── Stagger helper ────────────────────────────────────────────────────────
   Widget _anim(int i, Widget child) => FadeTransition(
-        opacity: _sectionFades[i],
-        child: SlideTransition(position: _sectionSlides[i], child: child),
-      );
+    opacity: _sectionFades[i],
+    child: SlideTransition(position: _sectionSlides[i], child: child),
+  );
 }

@@ -29,11 +29,16 @@ const chatFileUpload = multer({
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
+const roomImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 // Apply authentication middleware to ALL routes
 router.use(verifyJwt);
 
 // Room management
-//router.post("/room", uploadRoomImage.single("image"), createRoom);
+router.post("/room", roomImageUpload.single("image"), createRoom);
 router.get("/rooms", getRooms);
 router.get("/my-rooms", getMyRooms);
 router.get("/room/:roomId/members", getRoomMembers);
