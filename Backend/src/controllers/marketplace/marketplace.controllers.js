@@ -231,7 +231,8 @@ const getAllItems = asyncHandler(async (req, res) => {
   }
 
   let query = Item.find(filter)
-    .populate("sellerId", "shopName shopImage contactInfo")
+    // Include address so clients can show a real location label.
+    .populate("sellerId", "shopName shopImage contactInfo address geoLocation")
     .populate("userId", "username email profileImage")
     .skip(skip)
     .limit(limit)
@@ -272,7 +273,7 @@ const getAllItems = asyncHandler(async (req, res) => {
     ];
 
     const fallbackQuery = Item.find(fallbackFilter)
-      .populate("sellerId", "shopName shopImage contactInfo")
+      .populate("sellerId", "shopName shopImage contactInfo address geoLocation")
       .populate("userId", "username email profileImage")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -731,7 +732,7 @@ const getAdminAllListings = asyncHandler(async (req, res) => {
 
   const skip = (page - 1) * limit;
   const items = await Item.find(filter)
-    .populate("sellerId", "shopName shopImage contactInfo")
+    .populate("sellerId", "shopName shopImage contactInfo address geoLocation")
     .populate("userId", "username email profileImage")
     .sort({ createdAt: -1 })
     .skip(skip)

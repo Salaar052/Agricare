@@ -200,7 +200,6 @@ class _CropRecommendationScreenState extends State<CropRecommendationScreen>
                     ),
 
                     const SizedBox(height: 22),
-                    _animCard(3, _buildInfoBanner()),
                   ],
                 ),
               ),
@@ -516,54 +515,6 @@ class _CropRecommendationScreenState extends State<CropRecommendationScreen>
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  // ── Info banner ───────────────────────────────────────────────────────────
-  Widget _buildInfoBanner() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F9FF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFBAE6FD)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE0F2FE),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.info_rounded,
-                color: Color(0xFF0284C7), size: 18),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Weather-based forecast coming soon',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0C4A6E),
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'Auto weather detection is under development. Lab report scanning and manual soil entry are both available now.',
-                  style: TextStyle(
-                      fontSize: 12, color: Color(0xFF0369A1), height: 1.5),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

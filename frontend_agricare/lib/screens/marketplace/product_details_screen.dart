@@ -1,7 +1,6 @@
 // lib/screens/marketplace/product_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -106,10 +105,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
     try {
       if (wasAlreadySaved) {
-        await _marketplaceService.removeFromSavedItems(widget.productId);
+        await _marketplaceService.removeFromSavedItems(widget.productId, showToast: false);
         _showToast('Removed from saved items');
       } else {
-        await _marketplaceService.addToSavedItems(widget.productId);
+        await _marketplaceService.addToSavedItems(widget.productId, showToast: false);
         _showToast('Saved to your list');
       }
     } catch (e) {
@@ -418,7 +417,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
   // ─────────────────────────────────────────
   Widget _buildMainInfoSection() {
     final condition = _product!['condition']?.toString();
-    final location  = _product!['location']?['address']?.toString();
+    final itemLocation = _product!['location'];
+    final location = (itemLocation is Map ? itemLocation['address'] : null)?.toString().trim().isNotEmpty == true
+      ? (itemLocation as Map)['address'].toString().trim()
+      : ((_product!['sellerId'] is Map)
+        ? ((_product!['sellerId'] as Map)['address']?.toString().trim())
+        : null);
 
     return Container(
       width: double.infinity, // ✅ full width always

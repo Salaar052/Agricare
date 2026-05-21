@@ -1,9 +1,9 @@
 // lib/screens/marketplace/saved_items_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
 import '../../services/marketplace_service.dart';
 import 'product_details_screen.dart';
+import 'marketplace_main_screen.dart'; // ← ADDED
 import '../../api/api_config.dart';
 
 class SavedItemsScreen extends StatefulWidget {
@@ -117,70 +117,82 @@ class _SavedItemsScreenState extends State<SavedItemsScreen>
   // ────────────────────────────────────────────
   // APP BAR
   // ────────────────────────────────────────────
-  Widget _buildSliverAppBar(bool innerBoxIsScrolled) {
-    return SliverAppBar(
-      expandedHeight: 0,
-      floating: true,
-      pinned: true,
-      elevation: 0,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      leading: _AnimatedIconButton(
-        onTap: () => Navigator.of(context).maybePop(),
+ Widget _buildSliverAppBar(bool innerBoxIsScrolled) {
+  return SliverAppBar(
+    toolbarHeight: 70,
+    floating: true,
+    pinned: true,
+    elevation: 0,
+    backgroundColor: Colors.white,
+    surfaceTintColor: Colors.transparent,
+
+    automaticallyImplyLeading: false,
+
+    leadingWidth: 60,
+
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: _AnimatedIconButton(
+        onTap: () => Navigator.of(context).pop(),
         icon: Icons.arrow_back_ios_new_rounded,
         color: _primary,
       ),
-      title: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Saved Items',
-            style: TextStyle(
-              color: _textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
+    ),
+
+    title: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'Saved Items',
+          style: TextStyle(
+            color: _textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
-          const SizedBox(height: 1),
-          Text(
-            'AgriCare Marketplace',
-            style: TextStyle(
-              color: _textLight,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-      centerTitle: true,
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: _AnimatedIconButton(
-            onTap: _loadSavedItems,
-            icon: Icons.refresh_rounded,
-            color: _secondary,
+        ),
+        const SizedBox(height: 1),
+        Text(
+          'AgriCare Marketplace',
+          style: TextStyle(
+            color: _textLight,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ],
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: _divider),
-      ),
-    );
-  }
+    ),
 
+    centerTitle: true,
+
+    actions: [
+      Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: _AnimatedIconButton(
+          onTap: _loadSavedItems,
+          icon: Icons.refresh_rounded,
+          color: _secondary,
+        ),
+      ),
+    ],
+
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(1),
+      child: Container(
+        height: 1,
+        color: _divider,
+      ),
+    ),
+  );
+}
   // ────────────────────────────────────────────
-  // GRID  — FIX: use LayoutBuilder so aspect ratio adapts to screen width
+  // GRID
   // ────────────────────────────────────────────
   Widget _buildGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Two columns with 14px side padding + 12px gap → each card width:
-        final cardWidth = (constraints.maxWidth - 14 * 2 - 12) / 2;
-        // Image at 1:1, info section fixed height 88px → total card height
+        final cardWidth  = (constraints.maxWidth - 14 * 2 - 12) / 2;
         final cardHeight = cardWidth + 88.0;
         final ratio      = cardWidth / cardHeight;
 
@@ -192,7 +204,7 @@ class _SavedItemsScreenState extends State<SavedItemsScreen>
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  childAspectRatio: ratio,   // ← dynamic, not hardcoded
+                  childAspectRatio: ratio,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
                 ),
@@ -303,8 +315,7 @@ class _SavedItemsScreenState extends State<SavedItemsScreen>
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              gradient:
-                  const LinearGradient(colors: [_secondary, _accent]),
+              gradient: const LinearGradient(colors: [_secondary, _accent]),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
@@ -390,7 +401,12 @@ class _SavedItemsScreenState extends State<SavedItemsScreen>
             ),
             const SizedBox(height: 28),
             GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
+              // ── FIXED: navigates to MarketplaceMainScreen ──
+              onTap: () => Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => const MarketplaceMainScreen(),
+                ),
+              ),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 26, vertical: 13),
@@ -434,8 +450,6 @@ class _SavedItemsScreenState extends State<SavedItemsScreen>
 
 // ──────────────────────────────────────────────────────────────────────────────
 // PRODUCT CARD TILE
-// FIX: Column replaced with a Column that uses Expanded + intrinsic sizing
-//      so info section never overflows the card height
 // ──────────────────────────────────────────────────────────────────────────────
 class _ProductCardTile extends StatefulWidget {
   final Map<String, dynamic> product;
@@ -507,11 +521,10 @@ class _ProductCardTileState extends State<_ProductCardTile>
               ),
             ],
           ),
-          // ── FIX: Column with Expanded image + fixed-height info ──
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Image (Expanded takes remaining height above info) ──
+              // ── Image ──
               Expanded(
                 child: Stack(
                   children: [
@@ -612,7 +625,7 @@ class _ProductCardTileState extends State<_ProductCardTile>
                 ),
               ),
 
-              // ── Info section — FIXED height, no overflow ──
+              // ── Info section ──
               SizedBox(
                 height: 88,
                 child: Padding(
@@ -621,7 +634,6 @@ class _ProductCardTileState extends State<_ProductCardTile>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Price
                       Text(
                         'Rs ${widget.product["price"] ?? "—"}',
                         style: const TextStyle(
@@ -634,8 +646,6 @@ class _ProductCardTileState extends State<_ProductCardTile>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-
-                      // Title
                       Text(
                         widget.product['title'] ?? '',
                         style: const TextStyle(
@@ -647,8 +657,6 @@ class _ProductCardTileState extends State<_ProductCardTile>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-
-                      // Location row
                       Row(
                         children: [
                           Container(

@@ -190,7 +190,6 @@ class _MarketplaceRegisterScreenState extends State<MarketplaceRegisterScreen>
             _shopImageUrl = imageUrl;
             _isUploadingImage = false;
           });
-          _marketplaceService.showSuccess('Image uploaded successfully!');
         } catch (e) {
           setState(() {
             _selectedImage = null;
@@ -247,8 +246,6 @@ class _MarketplaceRegisterScreenState extends State<MarketplaceRegisterScreen>
         Get.find<MarketplaceAccountController>().setHaveMarketplaceAccount(true);
       }
       if (!mounted) return;
-      _marketplaceService
-          .showSuccess('Marketplace account created successfully!');
 
       // Return to Marketplace root inside the persistent bottom-nav shell.
       if (Navigator.of(context).canPop()) {
@@ -261,8 +258,8 @@ class _MarketplaceRegisterScreenState extends State<MarketplaceRegisterScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      _marketplaceService
-          .showError(e.toString().replaceAll('Exception: ', ''));
+      // `MarketplaceService.registerMarketplaceAccount` already displays a
+      // user-facing error toast/snackbar.
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

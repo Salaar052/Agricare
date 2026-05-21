@@ -133,6 +133,7 @@ class MarketplaceService {
     String? sellerBio,
     String? shopImage,
     Map<String, dynamic>? geoLocation,
+    bool showToast = true,
   }) async {
     try {
       print('🚀 Registering marketplace account...');
@@ -162,8 +163,10 @@ class MarketplaceService {
 
       final data = _parseResponse(response);
       print('✅ Marketplace account registered successfully');
-      
-      showSuccess('Marketplace account created successfully!');
+
+      if (showToast) {
+        showSuccess('Marketplace account created successfully!');
+      }
       
       return data['data'] ?? {};
     } catch (e) {
@@ -328,7 +331,7 @@ class MarketplaceService {
   }
 
   /// Add item to saved
-  Future<void> addToSavedItems(String itemId) async {
+  Future<void> addToSavedItems(String itemId, {bool showToast = true}) async {
     try {
       print('💾 Adding item to saved: $itemId');
       
@@ -340,7 +343,9 @@ class MarketplaceService {
       _parseResponse(response);
       
       print('✅ Item added to saved');
-      showSuccess('Item saved successfully!');
+      if (showToast) {
+        showSuccess('Item saved successfully!');
+      }
     } catch (e) {
       print('❌ Add to saved error: $e');
       showError(e.toString().replaceAll('Exception: ', ''));
@@ -349,7 +354,7 @@ class MarketplaceService {
   }
 
   /// Remove item from saved
-  Future<void> removeFromSavedItems(String itemId) async {
+  Future<void> removeFromSavedItems(String itemId, {bool showToast = true}) async {
     try {
       print('🗑️ Removing item from saved: $itemId');
       
@@ -361,7 +366,9 @@ class MarketplaceService {
       _parseResponse(response);
       
       print('✅ Item removed from saved');
-      showSuccess('Item removed from saved!');
+      if (showToast) {
+        showSuccess('Item removed from saved!');
+      }
     } catch (e) {
       print('❌ Remove from saved error: $e');
       showError(e.toString().replaceAll('Exception: ', ''));

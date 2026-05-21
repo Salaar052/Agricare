@@ -168,7 +168,6 @@ class _CreateListingScreenState extends State<CreateListingScreen>
         _imageUrls.add(url);
       }
       _newImages.clear();
-      _marketplaceService.showSuccess('Images uploaded successfully');
     } catch (e) {
       _marketplaceService.showError('Failed to upload images: $e');
     } finally {
@@ -273,73 +272,83 @@ class _CreateListingScreenState extends State<CreateListingScreen>
   // ──────────────────────────────────────────
   // SLIVER APP BAR
   // ──────────────────────────────────────────
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 0,
-      floating: true,
-      pinned: true,
-      elevation: 0,
-      backgroundColor: _cardBg,
-      surfaceTintColor: Colors.transparent,
-      // ✅ Fixed: proper back navigation with arrow icon
-      leading: _AnimatedIconButton(
-        onTap: () => Navigator.of(context).maybePop(),
+Widget _buildSliverAppBar() {
+  return SliverAppBar(
+    toolbarHeight: 70,
+    floating: true,
+    pinned: true,
+    elevation: 0,
+    backgroundColor: _cardBg,
+    surfaceTintColor: Colors.transparent,
+
+    automaticallyImplyLeading: false,
+    leadingWidth: 60,
+
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: _AnimatedIconButton(
+        onTap: () => Navigator.of(context).pop(),
         icon: Icons.arrow_back_ios_new_rounded,
         color: _primary,
       ),
-      title: Column(
-        children: [
-          Text(
-            _isEdit ? 'Edit Listing' : 'New Listing',
-            style: const TextStyle(
-              color: _textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.4,
-            ),
+    ),
+
+    title: Column(
+      children: [
+        Text(
+          _isEdit ? 'Edit Listing' : 'New Listing',
+          style: const TextStyle(
+            color: _textDark,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.4,
           ),
-          const SizedBox(height: 1),
-          Text(
-            'AgriCare Marketplace',
-            style: TextStyle(
-              color: _textLight,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
+        ),
+        const SizedBox(height: 1),
+        Text(
+          'AgriCare Marketplace',
+          style: TextStyle(
+            color: _textLight,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
-        ],
-      ),
-      centerTitle: true,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(height: 1, color: _divider),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 12),
-          child: _isSubmitting || _isUploading
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      color: _secondary,
-                    ),
-                  ),
-                )
-              : _AnimatedIconButton(
-                  onTap: _submitListing,
-                  label: 'Publish',
-                  color: _secondary,
-                  filled: true,
-                ),
         ),
       ],
-    );
-  }
+    ),
+
+    centerTitle: true,
+
+    actions: [
+      Padding(
+        padding: const EdgeInsets.only(right: 12),
+        child: _isSubmitting || _isUploading
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: _secondary,
+                  ),
+                ),
+              )
+            : _AnimatedIconButton(
+                onTap: _submitListing,
+                label: 'Publish',
+                color: _secondary,
+                filled: true,
+              ),
+      ),
+    ],
+
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(1),
+      child: Container(height: 1, color: _divider),
+    ),
+  );
+}
 
   // ──────────────────────────────────────────
   // USER BADGE

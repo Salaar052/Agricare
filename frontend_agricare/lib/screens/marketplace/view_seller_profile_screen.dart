@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../services/marketplace_service.dart';
 import '../../api/api_config.dart';
+import 'product_details_screen.dart';
 
 class ViewSellerProfileScreen extends StatefulWidget {
   final String sellerId;
@@ -17,6 +18,22 @@ class ViewSellerProfileScreen extends StatefulWidget {
 class _ViewSellerProfileScreenState extends State<ViewSellerProfileScreen>
     with TickerProviderStateMixin {
   late final MarketplaceService _marketplaceService;
+
+  String _resolveProductLocation(Map<String, dynamic> product) {
+    final location = product['location'];
+    if (location is Map) {
+      final address = (location['address'] ?? '').toString().trim();
+      if (address.isNotEmpty) return address;
+    }
+
+    final seller = product['sellerId'];
+    if (seller is Map) {
+      final address = (seller['address'] ?? '').toString().trim();
+      if (address.isNotEmpty) return address;
+    }
+
+    return 'Location not available';
+  }
 
   bool _isLoading = true;
   Map<String, dynamic>? _profile;
@@ -787,8 +804,20 @@ class _ViewSellerProfileScreenState extends State<ViewSellerProfileScreen>
 
     return GestureDetector(
       onTap: () {
-        // Get.to(() => ProductDetailsScreen(productId: product['_id']));
-      },
+  Navigator.of(context).push(
+    PageRouteBuilder(
+      pageBuilder: (_, __, ___) => ProductDetailsScreen(
+        productId: product['_id'],
+      ),
+      transitionDuration: const Duration(milliseconds: 260),
+      transitionsBuilder: (_, animation, __, child) =>
+          FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+    ),
+  );
+},
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -872,7 +901,7 @@ class _ViewSellerProfileScreenState extends State<ViewSellerProfileScreen>
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            product['location']?['address'] ?? 'Pakistan',
+                            _resolveProductLocation(product),
                             style: const TextStyle(
                                 fontSize: 10, color: Colors.grey),
                             maxLines: 1,

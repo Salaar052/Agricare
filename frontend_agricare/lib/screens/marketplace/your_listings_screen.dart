@@ -266,16 +266,6 @@ class _YourListingsScreenState extends State<YourListingsScreen>
               ],
             ),
           ),
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _bg,
-              border: Border.all(color: _border, width: 1.2),
-            ),
-            child: const Icon(Icons.more_horiz_rounded, size: 18, color: _dark),
-          ),
         ],
       ),
     );
@@ -815,7 +805,7 @@ class _YourListingsScreenState extends State<YourListingsScreen>
             const SizedBox(height: 6),
             Text(
               _searchQuery.isEmpty
-                  ? 'Create your first listing\nto start selling.'
+                  ? 'Tap the button below\nto create your first listing.'
                   : 'Try a different search term.',
               style: const TextStyle(
                 fontSize: 14,
@@ -825,55 +815,6 @@ class _YourListingsScreenState extends State<YourListingsScreen>
               ),
               textAlign: TextAlign.center,
             ),
-            if (_searchQuery.isEmpty) ...[
-              const SizedBox(height: 28),
-              GestureDetector(
-                onTap: () async {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CreateListingScreen(),
-                    ),
-                  );
-                  if (result == true) _loadListings();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 28, vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [_dark, _mid],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _dark.withOpacity(0.22),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded,
-                          size: 20, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
-                        'Create listing',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       ),

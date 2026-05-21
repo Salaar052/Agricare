@@ -267,7 +267,44 @@ class _MarketplaceMainScreenState extends State<MarketplaceMainScreen>
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2D5016)),
               ),
-              const Icon(Icons.tune_rounded, size: 20, color: Color(0xFF4A7C2C)),
+              GestureDetector(
+  onTap: () {
+    final hasFilters =
+        _selectedCategory != null || _searchQuery.trim().isNotEmpty;
+
+    if (!hasFilters) return;
+
+    setState(() {
+      _selectedCategory = null;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+
+    _loadProducts();
+  },
+  child: AnimatedOpacity(
+    duration: const Duration(milliseconds: 200),
+    opacity:
+        (_selectedCategory != null || _searchQuery.trim().isNotEmpty)
+            ? 1.0
+            : 0.45,
+    child: Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5EF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0xFFE0EED4),
+        ),
+      ),
+      child: const Icon(
+        Icons.filter_alt_off_rounded,
+        size: 20,
+        color: Color(0xFF4A7C2C),
+      ),
+    ),
+  ),
+),
             ],
           ),
         ),
@@ -338,6 +375,22 @@ class _MarketplaceMainScreenState extends State<MarketplaceMainScreen>
     );
   }
 
+  String _resolveProductLocation(Map<String, dynamic> product) {
+    final location = product['location'];
+    if (location is Map) {
+      final address = (location['address'] ?? '').toString().trim();
+      if (address.isNotEmpty) return address;
+    }
+
+    final seller = product['sellerId'];
+    if (seller is Map) {
+      final address = (seller['address'] ?? '').toString().trim();
+      if (address.isNotEmpty) return address;
+    }
+
+    return 'Location not available';
+  }
+
   Widget _buildProductCard(Map<String, dynamic> product) {
     final images = product['images'] as List? ?? [];
     final imageUrl = images.isNotEmpty ? images[0] : '';
@@ -402,7 +455,7 @@ class _MarketplaceMainScreenState extends State<MarketplaceMainScreen>
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
-                            product['location']?['address'] ?? 'Pakistan',
+                            _resolveProductLocation(product),
                             style: const TextStyle(fontSize: 10, color: Colors.grey),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
