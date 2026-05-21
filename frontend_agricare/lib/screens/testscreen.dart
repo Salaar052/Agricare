@@ -51,18 +51,6 @@ class ProfileScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit, color: Color(0xFF4A7C2C)),
-            onPressed: () {
-              Get.snackbar(
-                'Edit Profile',
-                'Edit functionality coming soon!',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Column(

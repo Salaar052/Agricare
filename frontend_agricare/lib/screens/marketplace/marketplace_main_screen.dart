@@ -5,8 +5,10 @@ import 'package:get/get.dart';
 import '../../controllers/main_nav_controller.dart';
 import '../../routes/app_routes.dart';
 import '../../services/marketplace_service.dart';
+import 'create_listing_screen.dart';
 import 'product_details_screen.dart';
 import 'marketplace_profile_screen.dart';
+import 'your_listings_screen.dart';
 import '../../api/api_config.dart';
 
 class MarketplaceMainScreen extends StatefulWidget {
@@ -95,6 +97,33 @@ class _MarketplaceMainScreenState extends State<MarketplaceMainScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FBF8),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF2D5016),
+        foregroundColor: Colors.white,
+        tooltip: 'Add new listing',
+        onPressed: () async {
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const CreateListingScreen(),
+            ),
+          );
+
+          if (result == true) {
+            if (!mounted) return;
+            await _loadProducts();
+
+            if (!mounted) return;
+            // After publish, take the user to their own listings where
+            // newly created items (often pending approval) are visible.
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const YourListingsScreen(),
+              ),
+            );
+          }
+        },
+        child: const Icon(Icons.add_rounded, size: 28),
+      ),
       body: SafeArea(
         child: Column(
           children: [

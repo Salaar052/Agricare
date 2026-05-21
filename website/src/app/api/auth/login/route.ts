@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Invalid credentials" }, { status: 401 });
   }
 
-  const base = (process.env.BACKEND_URL ?? "http://localhost:5000").replace(/\/$/, "");
+  const base = (process.env.BACKEND_URL ?? "https://agricare-t3ou.onrender.com").replace(/\/$/, "");
   const res = await fetch(`${base}/api/v1/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json" },

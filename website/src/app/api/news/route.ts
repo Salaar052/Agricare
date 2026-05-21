@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit")) || 12));
-  const base = (process.env.BACKEND_URL ?? "http://localhost:5000").replace(/\/$/, "");
+  const base = (process.env.BACKEND_URL ?? "https://agricare-t3ou.onrender.com").replace(/\/$/, "");
   const res = await fetch(
     `${base}/api/v1/news?page=${page}&limit=${limit}`,
     { cache: "no-store" },

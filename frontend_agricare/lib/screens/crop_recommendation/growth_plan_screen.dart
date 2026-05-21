@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import '../../api/api_config.dart';
 import '../../controllers/auth_controller.dart';
+import '../../utils/farmer_friendly_text.dart';
 
 class GrowthPlanScreen extends StatefulWidget {
   final String cropName;
@@ -117,12 +118,12 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
   String _planTitle(String planType) {
     switch (planType) {
       case 'irrigation':
-        return 'Irrigation Plan';
+        return 'Watering Plan (Pani/پانی)';
       case 'pesticides':
-        return 'Pesticides & Fertilizers';
+        return 'Spray (Dawai/دوائی) & Fertilizer (Khaad/کھاد)';
       case 'complete':
       default:
-        return 'Complete Growth Plan';
+        return 'Full Crop Plan';
     }
   }
 
@@ -424,7 +425,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select a Detailed Plan',
+            'Choose what you need',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -433,24 +434,24 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
           ),
           SizedBox(height: 16),
           _buildOptionCard(
-            title: 'Complete Growth Plan',
-            description: 'Full guide: stages, irrigation, fertilization, pest control & more',
+            title: 'Full Crop Plan',
+            description: 'Simple steps from start to harvest',
             icon: Icons.auto_graph,
             color: Color(0xFF7C3AED),
             planType: 'complete',
           ),
           SizedBox(height: 12),
           _buildOptionCard(
-            title: 'Pesticides & Fertilizers',
-            description: 'Chemical & organic products with application schedule',
+            title: 'Spray & Fertilizer (Khaad)',
+            description: 'What to spray/use and when',
             icon: Icons.science,
             color: Color(0xFFEF4444),
             planType: 'pesticides',
           ),
           SizedBox(height: 12),
           _buildOptionCard(
-            title: 'Irrigation Plan',
-            description: 'Water management, frequency & critical periods',
+            title: 'Watering Plan (Pani)',
+            description: 'When to water and how much',
             icon: Icons.water_drop,
             color: Color(0xFF3B82F6),
             planType: 'irrigation',
@@ -588,10 +589,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
   }
 
   List<String> _stringList(dynamic value) {
-    if (value is List) {
-      return value.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList();
-    }
-    return const [];
+    return FarmerFriendlyText.fromUnknown(value);
   }
 
   Widget _buildBulletsCard({
@@ -600,7 +598,8 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
     required Color accent,
     IconData? icon,
   }) {
-    if (bullets.isEmpty) return SizedBox.shrink();
+    final friendlyBullets = FarmerFriendlyText.simplifyList(bullets);
+    if (friendlyBullets.isEmpty) return SizedBox.shrink();
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       padding: EdgeInsets.all(14),
@@ -628,7 +627,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
             ],
           ),
           SizedBox(height: 10),
-          ...bullets.map(
+          ...friendlyBullets.map(
             (b) => Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: Row(
@@ -685,14 +684,19 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${_fieldLabel(k)}: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: accent)),
-                  Expanded(child: Text(v, style: TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF374151)))),
+                  Expanded(
+                    child: Text(
+                      FarmerFriendlyText.simplify(v),
+                      style: TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF374151)),
+                    ),
+                  ),
                 ],
               ),
             );
           }),
           if (bullets.isNotEmpty) ...[
             SizedBox(height: 2),
-            ...bullets.map(
+            ...FarmerFriendlyText.simplifyList(bullets).map(
               (b) => Padding(
                 padding: EdgeInsets.only(bottom: 8),
                 child: Row(
@@ -724,9 +728,9 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
     required String? warning,
   }) {
     final summary = (plan['summary'] is Map) ? (plan['summary'] as Map).cast<String, dynamic>() : <String, dynamic>{};
-    final summaryTitle = (summary['title'] ?? '').toString().trim();
-    final summaryBullets = _stringList(summary['bullets']);
-    final warnings = _stringList(plan['warnings']);
+    final summaryTitle = FarmerFriendlyText.simplify((summary['title'] ?? '').toString());
+    final summaryBullets = FarmerFriendlyText.simplifyList(_stringList(summary['bullets']), maxItems: 8);
+    final warnings = FarmerFriendlyText.simplifyList(_stringList(plan['warnings']), maxItems: 8);
 
     final content = <Widget>[];
 
@@ -772,31 +776,30 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (summaryTitle.isNotEmpty)
-                Text(
-                  summaryTitle,
-                  style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
-                ),
-              if (summaryTitle.isNotEmpty && summaryBullets.isNotEmpty) SizedBox(height: 10),
+              Text(
+                summaryTitle.isNotEmpty ? summaryTitle : 'What to do now',
+                style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)),
+              ),
+              if (summaryBullets.isNotEmpty) SizedBox(height: 10),
               if (summaryBullets.isNotEmpty)
-                ...summaryBullets.take(8).map(
-                      (b) => Padding(
-                        padding: EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              margin: EdgeInsets.only(top: 7),
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(child: Text(b, style: TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF374151)))),
-                          ],
+                ...summaryBullets.map(
+                  (b) => Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: EdgeInsets.only(top: 7),
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
                         ),
-                      ),
+                        SizedBox(width: 10),
+                        Expanded(child: Text(b, style: TextStyle(fontSize: 13, height: 1.45, color: Color(0xFF374151)))),
+                      ],
                     ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -811,7 +814,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: _buildBulletsCard(
-            title: 'Water Needs',
+            title: 'When to water',
             bullets: _stringList(irrigation['waterNeeds']),
             accent: accent,
             icon: Icons.water_drop,
@@ -820,7 +823,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: _buildBulletsCard(
-            title: 'Critical Periods',
+            title: 'Important times',
             bullets: _stringList(irrigation['criticalPeriods']),
             accent: Color(0xFFEF4444),
             icon: Icons.warning_amber_rounded,
@@ -901,7 +904,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: _buildBulletsCard(
-            title: 'IPM (First Choice)',
+            title: 'First try (no spray)',
             bullets: _stringList(plan['ipm']),
             accent: Color(0xFF10B981),
             icon: Icons.eco,
@@ -932,7 +935,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: _buildBulletsCard(
-            title: 'Quick Tips',
+            title: 'Quick tips',
             bullets: _stringList(plan['quickTips']),
             accent: Color(0xFF10B981),
             icon: Icons.lightbulb,
@@ -945,7 +948,7 @@ class _GrowthPlanScreenState extends State<GrowthPlanScreen> {
       Padding(
         padding: EdgeInsets.symmetric(horizontal: 16),
         child: _buildBulletsCard(
-          title: 'Warnings',
+          title: 'Safety / warnings',
           bullets: warnings,
           accent: Color(0xFFEF4444),
           icon: Icons.health_and_safety,

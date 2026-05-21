@@ -52,7 +52,14 @@ export async function getWeatherBasedCropRecommendation({ lat, lng, locationLabe
 
   const prompt = `You are an expert agronomist for Pakistan.
 
-Task: Recommend the best crops to plant NOW based on current weather + short forecast, current season in Pakistan, and Pakistan farming conditions.
+Task: Recommend the best crops to plant NOW based on weather + season.
+
+Writing rules (strict):
+- Use very simple English.
+- Use short sentences.
+- Keep each bullet under ~12 words.
+- No long paragraphs.
+- Use easy local words when helpful.
 
 Location: ${loc}
 Coordinates: lat=${weather.coordinates.lat}, lng=${weather.coordinates.lng}

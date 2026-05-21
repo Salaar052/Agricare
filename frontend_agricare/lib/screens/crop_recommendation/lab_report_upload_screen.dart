@@ -6,7 +6,7 @@
 //      N, P, K, pH, temperature, humidity, rainfall from the report
 //   3. Extracted values pre-fill the same 7 editable fields
 //   4. User reviews / corrects values, then taps "Analyse"
-//   5. Same POST /crop-recommendation/recommend request as manual form
+//   5. Crop prediction via HF Gradio two-step API (submit + poll)
 //   6. Navigates to GrowthPlanScreen on success
 //
 // Dependencies to add to pubspec.yaml:
@@ -20,6 +20,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'growth_plan_screen.dart';
 import '../../api/api_config.dart';
+import '../../api/crop_recommendation/crop_recommendation_api.dart';
 import 'soil_input_field.dart';
 
 class LabReportUploadScreen extends StatefulWidget {
@@ -74,8 +75,6 @@ class _LabReportUploadScreenState extends State<LabReportUploadScreen>
   late Animation<double>   _fadeAnim;
   late Animation<double>   _formFade;
   late Animation<Offset>   _formSlide;
-
-  String get _apiUrl => ApiConfig.apiV1('/crop-recommendation/recommend');
 
   @override
   void initState() {
@@ -368,36 +367,31 @@ class _LabReportUploadScreenState extends State<LabReportUploadScreen>
         'rainfall':    double.parse(_rnf.text),
       };
 
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(soilData),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw Exception('Request timeout'),
+      final json = await CropRecommendationApi.predict(
+        n: soilData['N'] as num,
+        p: soilData['P'] as num,
+        k: soilData['K'] as num,
+        temperature: soilData['temperature'] as num,
+        humidity: soilData['humidity'] as num,
+        ph: soilData['ph'] as num,
+        rainfall: soilData['rainfall'] as num,
       );
 
       setState(() => _isSubmitting = false);
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        if (json['success'] == true) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => GrowthPlanScreen(
-                cropName: json['recommended_crop'],
-                recommendationData: json,
-                soilData: soilData,
-              ),
+      if (json['success'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GrowthPlanScreen(
+              cropName: json['recommended_crop'],
+              recommendationData: json,
+              soilData: soilData,
             ),
-          );
-        } else {
-          throw Exception(json['error'] ?? 'Prediction failed');
-        }
+          ),
+        );
       } else {
-        final err = jsonDecode(response.body);
-        throw Exception(err['error'] ?? 'Server error ${response.statusCode}');
+        throw Exception(json['error'] ?? 'Prediction failed');
       }
     } catch (e) {
       setState(() {

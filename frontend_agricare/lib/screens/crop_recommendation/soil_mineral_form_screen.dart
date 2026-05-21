@@ -1,11 +1,10 @@
 // File: lib/screens/crop_recommendation/soil_mineral_form_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'soil_input_field.dart';
 import 'growth_plan_screen.dart';
 import '../../api/api_config.dart';
+import '../../api/crop_recommendation/crop_recommendation_api.dart';
 
 class SoilMineralFormScreen extends StatefulWidget {
   const SoilMineralFormScreen({super.key});
@@ -84,8 +83,6 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
   late List<Animation<double>> _sectionFades;
   late List<Animation<Offset>> _sectionSlides;
 
-  String get _apiUrl => ApiConfig.apiV1('/crop-recommendation/recommend');
-
   @override
   void initState() {
     super.initState();
@@ -147,37 +144,31 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
         'rainfall':    double.parse(_rainfallController.text),
       };
 
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(soilData),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () =>
-            throw Exception('Request timeout – server took too long to respond'),
+      final jsonData = await CropRecommendationApi.predict(
+        n: soilData['N'] as num,
+        p: soilData['P'] as num,
+        k: soilData['K'] as num,
+        temperature: soilData['temperature'] as num,
+        humidity: soilData['humidity'] as num,
+        ph: soilData['ph'] as num,
+        rainfall: soilData['rainfall'] as num,
       );
 
       setState(() => _isLoading = false);
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        if (jsonData['success'] == true) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => GrowthPlanScreen(
-                cropName: jsonData['recommended_crop'],
-                recommendationData: jsonData,
-                soilData: soilData,
-              ),
+      if (jsonData['success'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GrowthPlanScreen(
+              cropName: jsonData['recommended_crop'],
+              recommendationData: jsonData,
+              soilData: soilData,
             ),
-          );
-        } else {
-          throw Exception(jsonData['error'] ?? 'Prediction failed');
-        }
+          ),
+        );
       } else {
-        final err = json.decode(response.body);
-        throw Exception(err['error'] ?? 'Server error ${response.statusCode}');
+        throw Exception(jsonData['error'] ?? 'Prediction failed');
       }
     } catch (e) {
       setState(() {
@@ -191,15 +182,14 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
   String _formatError(String e) {
     if (e.contains('SocketException') || e.contains('Failed host lookup')) {
       return 'Cannot connect to server.\n\n'
-          '• Make sure the backend is running on port 5000\n'
-          '• Android Emulator: http://10.0.2.2:5000\n'
-          '• iOS Simulator: http://localhost:5000\n'
-          '• Real device: use your PC\'s local IP';
+          '• Check your internet connection\n'
+          '• Backend: ${ApiConfig.backendOrigin}\n'
+          '• Crop ML: ${ApiConfig.mlOrigin}';
     }
     if (e.contains('Connection refused')) {
       return 'Server not running.\n\n'
-          '• Start backend: npm start (port 5000)\n'
-          '• Check .env file has GEMINI_API_KEY';
+          '• Backend: ${ApiConfig.backendOrigin}\n'
+          '• Crop ML: ${ApiConfig.mlOrigin}';
     }
     if (e.contains('timeout')) {
       return 'Request timed out.\n\n'
@@ -901,7 +891,7 @@ class _SoilMineralFormScreenState extends State<SoilMineralFormScreen>
         ),
         const SizedBox(height: 12),
         Text(
-          'Powered by AI  ·  ${_apiUrl.replaceAll(RegExp(r'https?://[^/]+'), '')}',
+          'Powered by AI  ·  ${Uri.parse(ApiConfig.mlOrigin).host}',
           style: const TextStyle(fontSize: 10.5, color: Color(0xFFB0C4A0)),
           textAlign: TextAlign.center,
         ),

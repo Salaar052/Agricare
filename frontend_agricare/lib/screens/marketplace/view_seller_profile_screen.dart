@@ -200,11 +200,6 @@ class _ViewSellerProfileScreenState extends State<ViewSellerProfileScreen>
               ],
             ),
             const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.more_horiz_rounded,
-                  color: Color(0xFF2D5016)),
-              onPressed: _showOptionsSheet,
-            ),
           ],
         ),
       ),

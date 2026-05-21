@@ -6,7 +6,11 @@
     /// Single place to set your backend URL for a REAL PHONE.
     /// Make sure to include scheme and port.
     /// Example: 'http://192.168.100.9:5000'
-    static const String defaultBackendOrigin = 'http://10.48.188.83:5000';
+    static const String defaultBackendOrigin = 'https://agricare-t3ou.onrender.com';
+
+    /// Crop recommendation ML service (HF Space)
+    static const String defaultMlOrigin =
+        'https://aqeelsaeed-crop-recommendation-api.hf.space';
 
     /// Set to `true` only when running on Android Emulator.
     /// (Android emulator reaches your PC via 10.0.2.2)
@@ -18,13 +22,19 @@
       'BACKEND_ORIGIN',
     );
 
+    /// Override at runtime, e.g.
+    /// `flutter run --dart-define=ML_ORIGIN=https://...hf.space`
+    static const String _mlOriginOverride = String.fromEnvironment(
+      'ML_ORIGIN',
+    );
+
     static const int _defaultPort = 5000;
 
     static String get backendOrigin {
       if (_backendOriginOverride.isNotEmpty) return _backendOriginOverride;
 
       if (kIsWeb) {
-        return 'http://localhost:$_defaultPort';
+        return defaultBackendOrigin;
       }
 
       // Android emulator reaches host machine via 10.0.2.2
@@ -36,11 +46,21 @@
       return defaultBackendOrigin;
     }
 
+    static String get mlOrigin {
+      if (_mlOriginOverride.isNotEmpty) return _mlOriginOverride;
+      return defaultMlOrigin;
+    }
+
     static String get apiV1Base => '$backendOrigin/api/v1';
 
     static String apiV1(String path) {
       final cleanPath = path.startsWith('/') ? path.substring(1) : path;
       return '$apiV1Base/$cleanPath';
+    }
+
+    static String mlUrl(String path) {
+      final cleanPath = path.startsWith('/') ? path.substring(1) : path;
+      return '$mlOrigin/$cleanPath';
     }
 
     static String get authBase => apiV1('auth');

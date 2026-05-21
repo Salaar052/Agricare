@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 export const runtime = "nodejs";
 
 export async function POST() {
-  const base = (process.env.BACKEND_URL ?? "http://localhost:5000").replace(/\/$/, "");
+  const base = (process.env.BACKEND_URL ?? "https://agricare-t3ou.onrender.com").replace(/\/$/, "");
   const jar = await cookies();
   const token = jar.get("agricare_admin_token")?.value;
   if (token) {

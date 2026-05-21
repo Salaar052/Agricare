@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 export const runtime = "nodejs";
 
 export async function backendFetch(path: string, init?: RequestInit) {
-  const base = (process.env.BACKEND_URL ?? "http://localhost:5000").replace(/\/$/, "");
+  const base = (process.env.BACKEND_URL ?? "https://agricare-t3ou.onrender.com").replace(/\/$/, "");
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
   const jar = await cookies();

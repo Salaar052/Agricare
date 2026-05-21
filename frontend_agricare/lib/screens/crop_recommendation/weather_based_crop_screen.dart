@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../utils/farmer_friendly_text.dart';
 import 'package:get/get.dart';
 
 import '../../controllers/auth_controller.dart';
-import '../../routes/app_routes.dart';
 import '../../services/location_service.dart';
 import '../../services/weather_based_crop_service.dart';
 
@@ -23,6 +23,8 @@ class _WeatherBasedCropRecommendationScreenState
   final WeatherBasedCropService _service = WeatherBasedCropService();
 
   final _searchCtrl = TextEditingController();
+  // FocusNode to dismiss keyboard when panel closes
+  final _searchFocus = FocusNode();
 
   bool _loading = false;
   String? _error;
@@ -33,6 +35,8 @@ class _WeatherBasedCropRecommendationScreenState
   double? _lng;
   String? _label;
 
+  bool get _hasSelectedLocation => _lat != null && _lng != null;
+
   // Animation controllers
   late AnimationController _pulseController;
   late AnimationController _fadeController;
@@ -42,7 +46,6 @@ class _WeatherBasedCropRecommendationScreenState
   // ── Design tokens ──────────────────────────
   static const Color _primary    = Color(0xFF1C4A2A);
   static const Color _secondary  = Color(0xFF2D7A47);
-  static const Color _accent     = Color(0xFF4CAF70);
   static const Color _bg         = Color(0xFFF4F8F1);
   static const Color _card       = Colors.white;
   static const Color _border     = Color(0xFFDCEDD5);
@@ -80,13 +83,28 @@ class _WeatherBasedCropRecommendationScreenState
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocus.dispose();
     _pulseController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
+  // ── FIX: Close the panel cleanly, clearing all search state ──
+  void _closeLocationPanel() {
+    _searchFocus.unfocus();
+    setState(() {
+      _showChangeLocation = false;
+      _results = const [];
+      _searchCtrl.clear();
+      _error = null;
+    });
+  }
+
   Future<void> _useLiveLocation() async {
-    setState(() { _loading = true; _error = null; _results = const []; });
+    // FIX: Close panel immediately before fetching
+    _closeLocationPanel();
+
+    setState(() { _loading = true; _error = null; });
     try {
       final pos = await _locationService.getCurrentPosition();
       if (pos == null) {
@@ -100,7 +118,6 @@ class _WeatherBasedCropRecommendationScreenState
       _lng = pos.longitude;
       final label = await _locationService.reverseGeocodeLabel(pos.latitude, pos.longitude);
       _label = label != 'Unknown' ? label : null;
-      _auth.setLocation(lat: _lat!, lng: _lng!, label: _label);
       await _refresh();
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
@@ -120,10 +137,15 @@ class _WeatherBasedCropRecommendationScreenState
   }
 
   Future<void> _selectManual(LocationSearchResult r) async {
-    _lat   = r.latitude;
-    _lng   = r.longitude;
-    _label = r.label;
-    _auth.setLocation(lat: _lat!, lng: _lng!, label: r.label);
+    setState(() {
+      _lat   = r.latitude;
+      _lng   = r.longitude;
+      _label = r.label;
+    });
+
+    // FIX: Close panel immediately before fetching — user sees clean loader
+    _closeLocationPanel();
+
     await _refresh();
   }
 
@@ -139,15 +161,9 @@ class _WeatherBasedCropRecommendationScreenState
       final response = await _service.recommend(
         lat: _lat!,
         lng: _lng!,
-        locationLabel: _label ?? _auth.locationLabel.value,
+        locationLabel: _label,
         headers: _auth.getAuthHeaders(),
       );
-
-      final weatherCurrent = response['weather']?['current'];
-      final temp = weatherCurrent is Map ? weatherCurrent['temperatureC'] : null;
-      if (temp is num) {
-        _auth.setLocation(lat: _lat!, lng: _lng!, temp: temp.toDouble());
-      }
 
       setState(() { _apiResponse = response; _loading = false; });
       _fadeController.forward();
@@ -174,7 +190,8 @@ class _WeatherBasedCropRecommendationScreenState
       appBar: _buildAppBar(),
       body: RefreshIndicator(
         color: _secondary,
-        onRefresh: _refresh,
+        // FIX: Only allow pull-to-refresh when panel is closed
+        onRefresh: _showChangeLocation ? () async {} : _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -185,32 +202,32 @@ class _WeatherBasedCropRecommendationScreenState
             const SizedBox(height: 12),
 
             // ── 2. NO-LOCATION PROMPT ──
-            if (!_auth.hasLocation) ...[
+            if (!_hasSelectedLocation) ...[
               _buildNoLocationCard(),
               const SizedBox(height: 12),
             ],
 
-            // ── 3. LOADER ──
-            if (_loading) ...[
+            // ── 3. LOADER — only show when panel is closed ──
+            if (_loading && !_showChangeLocation) ...[
               _buildBeautifulLoader(),
               const SizedBox(height: 12),
             ],
 
             // ── 4. ERROR ──
-            if (_error != null && !_loading) ...[
+            if (_error != null && !_loading && !_showChangeLocation) ...[
               _buildErrorCard(_error!),
               const SizedBox(height: 12),
             ],
 
             // ── 5. WEATHER SUMMARY ──
-            if (rec != null && !_loading)
+            if (rec != null && !_loading && !_showChangeLocation)
               FadeTransition(
                 opacity: _fadeAnim,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildWeatherSummary(
-                      label:    _label ?? _auth.locationLabel.value,
+                      label:    _label,
                       season:   season,
                       current:  current,
                       forecast: forecast,
@@ -222,7 +239,7 @@ class _WeatherBasedCropRecommendationScreenState
               ),
 
             // ── 6. HINT ──
-            if (rec == null && !_loading && _error == null && _auth.hasLocation)
+            if (rec == null && !_loading && _error == null && _hasSelectedLocation && !_showChangeLocation)
               _buildHintCard(),
           ],
         ),
@@ -271,7 +288,7 @@ class _WeatherBasedCropRecommendationScreenState
   // LOCATION CARD (top, collapsible change panel)
   // ─────────────────────────────────────────
   Widget _buildLocationCard() {
-    final currentLabel = (_label ?? _auth.locationLabel.value).trim();
+    final currentLabel = (_label ?? '').trim();
 
     return Container(
       decoration: BoxDecoration(
@@ -300,7 +317,7 @@ class _WeatherBasedCropRecommendationScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Current location',
+                        const Text('Selected location',
                           style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _textLight)),
                       const SizedBox(height: 2),
                       Text(
@@ -312,14 +329,19 @@ class _WeatherBasedCropRecommendationScreenState
                   ),
                 ),
                 const SizedBox(width: 8),
+                // FIX: "Done" tap calls _closeLocationPanel for clean teardown
                 GestureDetector(
                   onTap: _loading ? null : () {
                     HapticFeedback.lightImpact();
-                    setState(() {
-                      _showChangeLocation = !_showChangeLocation;
-                      _error = null;
-                      _results = const [];
-                    });
+                    if (_showChangeLocation) {
+                      _closeLocationPanel();
+                    } else {
+                      setState(() {
+                        _showChangeLocation = true;
+                        _error = null;
+                        _results = const [];
+                      });
+                    }
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -360,6 +382,7 @@ class _WeatherBasedCropRecommendationScreenState
                         width: double.infinity,
                         height: 46,
                         child: ElevatedButton.icon(
+                          // FIX: Disable during any loading, not just _loading
                           onPressed: _loading ? null : _useLiveLocation,
                           icon: const Icon(Icons.my_location_rounded, size: 18),
                           label: const Text('Use my current location',
@@ -392,6 +415,7 @@ class _WeatherBasedCropRecommendationScreenState
                       // Search field
                       TextField(
                         controller: _searchCtrl,
+                        focusNode: _searchFocus,
                         textInputAction: TextInputAction.search,
                         onSubmitted: (_) => _search(),
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _textDark),
@@ -413,13 +437,30 @@ class _WeatherBasedCropRecommendationScreenState
                         ),
                       ),
 
+                      // FIX: Show inline search loader inside the panel (not below it)
+                      if (_loading && _showChangeLocation) ...[
+                        const SizedBox(height: 14),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: _secondary),
+                            ),
+                            SizedBox(width: 10),
+                            Text('Fetching recommendations…',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _textMid)),
+                          ],
+                        ),
+                      ],
+
                       // Search results
-                      if (_results.isNotEmpty) ...[
+                      if (_results.isNotEmpty && !_loading) ...[
                         const SizedBox(height: 10),
                         ..._results.take(6).map((r) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: InkWell(
-                            onTap: _loading ? null : () => _selectManual(r),
+                            onTap: () => _selectManual(r),
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
@@ -444,6 +485,29 @@ class _WeatherBasedCropRecommendationScreenState
                             ),
                           ),
                         )),
+                      ],
+
+                      // FIX: Show search error inside the panel
+                      if (_error != null && _showChangeLocation && !_loading) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF2F2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFCA5A5)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.info_outline_rounded, color: _errorColor, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(_error!,
+                                    style: const TextStyle(color: _errorColor, fontSize: 13, fontWeight: FontWeight.w600)),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -480,21 +544,25 @@ class _WeatherBasedCropRecommendationScreenState
           const SizedBox(width: 12),
           const Expanded(
             child: Text(
-              'Set your location once to get weather-based crop recommendations.',
+              'Select a location to get weather-based crop recommendations.',
               style: TextStyle(color: _warning, fontWeight: FontWeight.w600, fontSize: 13.5, height: 1.4),
             ),
           ),
           const SizedBox(width: 8),
           TextButton(
-            onPressed: () => Get.toNamed(
-              AppRoutes.locationSetup,
-              arguments: {'next': AppRoutes.weatherBasedCrop, 'mode': 'off'},
-            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              setState(() {
+                _showChangeLocation = true;
+                _error = null;
+                _results = const [];
+              });
+            },
             style: TextButton.styleFrom(
               foregroundColor: _warning,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             ),
-            child: const Text('Set up', style: TextStyle(fontWeight: FontWeight.w800)),
+            child: const Text('Select', style: TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -504,73 +572,74 @@ class _WeatherBasedCropRecommendationScreenState
   // ─────────────────────────────────────────
   // BEAUTIFUL LOADER
   // ─────────────────────────────────────────
- Widget _buildBeautifulLoader() {
-  return Container(
-    padding: const EdgeInsets.all(28),
-    decoration: BoxDecoration(
-      color: _card,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: _border),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 12,
-          offset: const Offset(0, 4),
-        )
-      ],
-    ),
-    child: Column(
-      children: [
-        ScaleTransition(
-          scale: _pulseAnim,
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: _surface,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: _secondary.withOpacity(0.2),
-                  blurRadius: 20,
-                  spreadRadius: 4,
-                )
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: _secondary,
-                backgroundColor: _border,
+  Widget _buildBeautifulLoader() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          ScaleTransition(
+            scale: _pulseAnim,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _surface,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _secondary.withOpacity(0.2),
+                    blurRadius: 20,
+                    spreadRadius: 4,
+                  )
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: _secondary,
+                  backgroundColor: _border,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 18),
-        const Text(
-          'Fetching Best crop according to your weather…',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: _textDark,
-            letterSpacing: -0.2,
+          const SizedBox(height: 18),
+          const Text(
+            'Fetching Best crop according to your weather…',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+              letterSpacing: -0.2,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Analysing current conditions for your location',
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w500,
-            color: _textLight,
+          const SizedBox(height: 6),
+          const Text(
+            'Analysing current conditions for your location',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              color: _textLight,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   // ─────────────────────────────────────────
   // ERROR CARD
@@ -724,12 +793,21 @@ class _WeatherBasedCropRecommendationScreenState
 
           final crop          = (m['crop'] ?? '--').toString();
           final score         = m['suitabilityScore'];
-          final why           = (m['why'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[];
+          final why           = FarmerFriendlyText.simplifyList(
+            (m['why'] as List?)?.map((e) => e.toString()).toList() ?? const <String>[],
+            maxItems: 4,
+          );
           final plantingWindow = (m['plantingWindow'] ?? '').toString();
           final waterNeed      = (m['waterNeed'] ?? '').toString();
-          final pakistanNotes  = (m['pakistanNotes'] ?? '').toString();
-          final keyRisks       = (m['keyRisks'] as List?)?.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList() ?? const <String>[];
-          final actionTips     = (m['actionTips'] as List?)?.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList() ?? const <String>[];
+          final pakistanNotes  = FarmerFriendlyText.simplify((m['pakistanNotes'] ?? '').toString());
+          final keyRisks       = FarmerFriendlyText.simplifyList(
+            (m['keyRisks'] as List?)?.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList() ?? const <String>[],
+            maxItems: 4,
+          );
+          final actionTips     = FarmerFriendlyText.simplifyList(
+            (m['actionTips'] as List?)?.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList() ?? const <String>[],
+            maxItems: 4,
+          );
 
           return _CropCard(
             rank: idx + 1,
@@ -737,7 +815,7 @@ class _WeatherBasedCropRecommendationScreenState
             score: score,
             why: why,
             plantingWindow: plantingWindow,
-            waterNeed: waterNeed,
+            waterNeed: FarmerFriendlyText.simplify(waterNeed),
             pakistanNotes: pakistanNotes,
             keyRisks: keyRisks,
             actionTips: actionTips,
