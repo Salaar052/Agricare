@@ -6,15 +6,18 @@
     /// Single place to set your backend URL for a REAL PHONE.
     /// Make sure to include scheme and port.
     /// Example: 'http://192.168.100.9:5000'
-    static const String defaultBackendOrigin = 'https://agricare-t3ou.onrender.com';
+    static const String defaultBackendOrigin = 'http://127.0.0.1:5000';
 
     /// Crop recommendation ML service (HF Space)
     static const String defaultMlOrigin =
         'https://aqeelsaeed-crop-recommendation-api.hf.space';
 
-    /// Set to `true` only when running on Android Emulator.
-    /// (Android emulator reaches your PC via 10.0.2.2)
-    static const bool useAndroidEmulator = false;
+    /// Android emulator reaches your PC via 10.0.2.2.
+    /// For a REAL phone, set this to false and use `BACKEND_ORIGIN` with your PC's LAN IP.
+    /// Example:
+    /// `flutter run --dart-define=USE_ANDROID_EMULATOR=false --dart-define=BACKEND_ORIGIN=http://192.168.1.10:5000`
+    static const bool useAndroidEmulator =
+        bool.fromEnvironment('USE_ANDROID_EMULATOR', defaultValue: true);
 
     /// Override at runtime, e.g.
     /// `flutter run --dart-define=BACKEND_ORIGIN=http://192.168.1.10:5000`
@@ -28,13 +31,21 @@
       'ML_ORIGIN',
     );
 
-    static const int _defaultPort = 5000;
+    static const int _defaultPort = int.fromEnvironment('BACKEND_PORT', defaultValue: 5000);
+
+    static String _normalizeOrigin(String origin) {
+      final o = origin.trim();
+      if (o.endsWith('/')) return o.substring(0, o.length - 1);
+      return o;
+    }
 
     static String get backendOrigin {
-      if (_backendOriginOverride.isNotEmpty) return _backendOriginOverride;
+      if (_backendOriginOverride.isNotEmpty) {
+        return _normalizeOrigin(_backendOriginOverride);
+      }
 
       if (kIsWeb) {
-        return defaultBackendOrigin;
+        return _normalizeOrigin(defaultBackendOrigin);
       }
 
       // Android emulator reaches host machine via 10.0.2.2
@@ -43,7 +54,7 @@
       }
 
       // Real phone / other platforms
-      return defaultBackendOrigin;
+      return _normalizeOrigin(defaultBackendOrigin);
     }
 
     static String get mlOrigin {

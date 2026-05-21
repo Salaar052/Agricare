@@ -51,8 +51,8 @@ router.post('/weather-based', recommendWeatherBasedCrops);
 
 /**
  * @route   POST /api/v1/crop-recommendation/extract-lab-report
- * @desc    Extract N,P,K,pH,temperature,humidity,rainfall from a lab-report image
- * @access  Public (requires GEMINI_API_KEY on backend)
+ * @desc    Extract N,P,K,pH,temperature,humidity,rainfall from a lab-report image (OCR-first; Gemini optional fallback)
+ * @access  Public
  * @form    multipart/form-data (field: image)
  */
 router.post('/extract-lab-report', labReportUpload.single('image'), extractLabReport);
