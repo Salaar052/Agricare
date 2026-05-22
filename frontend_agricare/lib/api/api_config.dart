@@ -6,7 +6,8 @@ class ApiConfig {
   /// Single place to set your backend URL for a REAL PHONE.
   /// Make sure to include scheme and port.
   /// Example: 'http://192.168.100.9:5000'
-  static const String defaultBackendOrigin = 'http://localhost:5000';
+  static const String defaultBackendOrigin =
+      'https://agricare-t3ou.onrender.com';
   //check this
 
   /// Crop recommendation ML service (HF Space)
