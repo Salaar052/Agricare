@@ -394,6 +394,23 @@ class ChatApiService {
     }
   }
 
+  /// Admin: delete any message
+  Future<void> adminDeleteMessage(String messageId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/admin/message/$messageId'),
+        headers: _headers,
+      );
+
+      if (response.statusCode != 200) {
+        final body = json.decode(response.body);
+        throw Exception(body['error'] ?? 'Failed to delete message');
+      }
+    } catch (e) {
+      throw Exception('Error deleting message: $e');
+    }
+  }
+
   /// Delete a message
   Future<void> deleteMessage(String messageId) async {
     try {

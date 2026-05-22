@@ -10,6 +10,7 @@ import '../../controllers/auth_controller.dart';
 import '../../widgets/message_bubble.dart';
 import '../../models/community_chat/chat_room.dart';
 import '../../api/api_config.dart';
+import '../../routes/app_routes.dart';
 
 class GroupChatScreen extends StatefulWidget {
   const GroupChatScreen({super.key});
@@ -244,7 +245,24 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     final currentRoom = room;
     return Scaffold(
       appBar: AppBar(
-        title: Text(currentRoom?.name ?? 'Group Chat'),
+        title: currentRoom == null
+            ? const Text('Group Chat')
+            : InkWell(
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.groupDetail,
+                    arguments: {'room': currentRoom},
+                  );
+                },
+                child: Text(
+                  currentRoom.name,
+                  style: const TextStyle(
+                    decoration: TextDecoration.underline,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

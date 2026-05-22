@@ -18,7 +18,7 @@ export async function DELETE(
 
   const { id } = await ctx.params;
 
-  const res = await backendFetch(`/api/v1/chat/admin/message/${id}`, {
+  const res = await backendFetch(`/api/v1/auth/admin/users/${id}/block`, {
 
     method: "DELETE",
 
@@ -30,7 +30,7 @@ export async function DELETE(
 
     return NextResponse.json(
 
-      { ok: false, error: j?.error ?? j?.message ?? "Delete failed" },
+      { ok: false, error: j?.message ?? j?.error ?? "Block failed" },
 
       { status: res.status },
 

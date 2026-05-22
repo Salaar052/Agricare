@@ -430,6 +430,8 @@ export const deleteMessage = async (req, res) => {
     const { messageId } = req.params;
     const userId = req.user._id.toString();
 
+    console.log(`[chat] deleteMessage requested by user=${userId} messageId=${messageId}`);
+
     const message = await Message.findById(messageId);
     
     if (!message) {
@@ -443,17 +445,23 @@ export const deleteMessage = async (req, res) => {
       return res.status(404).json({ error: "Room not found" });
     }
 
-    // Check if user is sender, room admin, or a site admin
+    const senderId = message.sender?.toString?.() ?? String(message.sender);
+    const roomAdminId = room.admin?.toString?.() ?? String(room.admin);
+
     if (
-      message.sender !== userId &&
-      room.admin !== userId &&
+      senderId !== userId &&
+      roomAdminId !== userId &&
       !isAdminUser(req.user)
     ) {
+      console.log(
+        `[chat] deleteMessage denied user=${userId} sender=${senderId} roomAdmin=${roomAdminId} isAdmin=${isAdminUser(req.user)}`,
+      );
       return res.status(403).json({ error: "Not authorized to delete this message" });
     }
 
-    await Message.findByIdAndDelete(messageId);
-    
+    const deleted = await Message.findByIdAndDelete(messageId);
+    console.log(`[chat] deleteMessage completed messageId=${messageId} deleted=${!!deleted}`);
+
     res.json({ message: "Message deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -544,6 +552,31 @@ export const adminGetRoomMembers = async (req, res) => {
       memberCount: room.members.length,
       members,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Admin: delete any message in any room
+export const adminDeleteMessage = async (req, res) => {
+  try {
+    if (!ensureAdmin(req, res)) return;
+    const { messageId } = req.params;
+
+    console.log(`[chat][admin] adminDeleteMessage requested by user=${req.user?._id} isAdmin=${isAdminUser(req.user)} messageId=${messageId}`);
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      console.log(`[chat][admin] adminDeleteMessage message not found messageId=${messageId}`);
+      return res.status(404).json({ error: "Message not found" });
+    }
+
+    console.log(`[chat][admin] adminDeleteMessage target sender=${message.sender} roomId=${message.roomId}`);
+
+    const deleted = await Message.findByIdAndDelete(messageId);
+    console.log(`[chat][admin] adminDeleteMessage completed messageId=${messageId} deleted=${!!deleted}`);
+
+    res.json({ success: true, message: "Message deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

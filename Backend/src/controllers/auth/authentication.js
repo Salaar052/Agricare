@@ -10,6 +10,7 @@ import { generateToken } from "../../services/auth/auth.js";
 import cloudinary from "../../utils/cloudinary.js";
 import mongoose from "mongoose";
 import { sendVerificationEmailForUser } from "./emailVerification.controller.js";
+import { blockAndDeleteUser } from "../../services/auth/blockUserService.js";
 
 const ADMIN_EMAILS = new Set([
   "fa22-bse-052@cuilahore.edu.pk",
@@ -659,6 +660,32 @@ export async function enableSellerAccountHandler(req, res) {
     return res.status(500).json({
       success: false,
       message: "Failed to enable seller account",
+    });
+  }
+}
+
+export async function blockUserCompletelyHandler(req, res) {
+  try {
+    if (!req.user?.isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: "Only admin can block users",
+      });
+    }
+
+    const { userId } = req.params;
+    const result = await blockAndDeleteUser(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "User blocked and all related data removed",
+      ...result,
+    });
+  } catch (error) {
+    console.error("Block user error:", error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Failed to block user",
     });
   }
 }

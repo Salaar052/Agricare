@@ -139,6 +139,7 @@ class _HarvestScreenState extends State<HarvestScreen> {
         forecast: forecast,
       );
 
+      if (!mounted) return;
       setState(() => _result = result);
     } catch (e) {
       setState(() {

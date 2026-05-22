@@ -1,10 +1,10 @@
 import { validateSoilAndWeather } from "../../utils/soilValidation.js";
+import { getAdvisory } from "../../services/fertilizer_advisery/fertilizer_advisery.js";
 import { getCropInsightForUnlistedName } from "../../services/fertilizer_advisery/cropInsightGemini.js";
 import { getGeminiFertilizerAdvisory } from "../../services/fertilizer_advisery/fertilizerGeminiService.js";
 
 /**
- * POST /api/advisory
- * Returns AI-generated fertilizer and pesticide recommendations.
+ * POST /api/advisory — hybrid: rule engine baseline + Gemini recommendations.
  */
 export const getAdvisoryController = async (req, res, next) => {
   try {
@@ -32,9 +32,7 @@ export const getAdvisoryController = async (req, res, next) => {
       nitrogen: Number(soil.nitrogen),
       phosphorus: Number(soil.phosphorus),
       potassium: Number(soil.potassium),
-      ...(soil.ph != null && soil.ph !== ""
-        ? { ph: Number(soil.ph) }
-        : {}),
+      ...(soil.ph != null && soil.ph !== "" ? { ph: Number(soil.ph) } : {}),
     };
     const normalizedWeather = {
       temperature: Number(weather.temperature),
@@ -49,28 +47,43 @@ export const getAdvisoryController = async (req, res, next) => {
       });
     }
 
+    const ruleResult = getAdvisory(crop.trim(), normalizedSoil, normalizedWeather);
+
     const aiResult = await getGeminiFertilizerAdvisory(
       crop.trim(),
       normalizedSoil,
-      normalizedWeather
+      normalizedWeather,
+      {
+        fertilizers: ruleResult.fertilizers,
+        pesticides: ruleResult.pesticides,
+      }
     );
-
-    if (!aiResult.success) {
-      return res.status(503).json({
-        error:
-          aiResult.error ||
-          "AI advisory service is temporarily unavailable. Please try again.",
-      });
-    }
 
     const cropInsight = await getCropInsightForUnlistedName(crop.trim());
 
+    if (aiResult.success) {
+      return res.status(200).json({
+        crop: crop.trim(),
+        fertilizers: aiResult.fertilizers.length
+          ? aiResult.fertilizers
+          : ruleResult.fertilizers,
+        pesticides: aiResult.pesticides.length
+          ? aiResult.pesticides
+          : ruleResult.pesticides,
+        aiSummary: aiResult.summary,
+        aiGenerated: true,
+        hybrid: true,
+        cropInsight: cropInsight?.tip ?? null,
+        cropDisplayName: cropInsight?.displayName ?? null,
+      });
+    }
+
     return res.status(200).json({
-      crop: crop.trim(),
-      fertilizers: aiResult.fertilizers,
-      pesticides: aiResult.pesticides,
-      aiSummary: aiResult.summary,
-      aiGenerated: true,
+      ...ruleResult,
+      aiSummary: null,
+      aiGenerated: false,
+      hybrid: true,
+      ruleFallback: true,
       cropInsight: cropInsight?.tip ?? null,
       cropDisplayName: cropInsight?.displayName ?? null,
     });

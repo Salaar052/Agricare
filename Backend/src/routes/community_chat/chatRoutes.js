@@ -16,6 +16,7 @@ import {
   getRoomMembers,
   searchRooms,
   deleteMessage,
+  adminDeleteMessage,
   adminGetAllRooms,
   adminGetRoomMessages,
   adminGetRoomMembers,
@@ -52,6 +53,7 @@ router.get("/messages/:roomId", getMessages);
 router.post("/message/:roomId", sendMessage);
 router.post("/upload/:roomId", chatFileUpload.single("file"), uploadFile);
 router.delete("/message/:messageId", deleteMessage);
+router.delete("/admin/message/:messageId", adminDeleteMessage);
 
 // Read status
 router.get("/unread/:roomId", getUnreadCount);

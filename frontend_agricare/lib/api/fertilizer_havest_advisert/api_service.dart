@@ -153,6 +153,7 @@ class HarvestResult {
   final String advice;
   final String? cropInsight;
   final String? cropDisplayName;
+  final bool aiGenerated;
 
   const HarvestResult({
     required this.crop,
@@ -162,6 +163,7 @@ class HarvestResult {
     required this.advice,
     this.cropInsight,
     this.cropDisplayName,
+    this.aiGenerated = false,
   });
 
   factory HarvestResult.fromJson(Map<String, dynamic> json) => HarvestResult(
@@ -172,5 +174,6 @@ class HarvestResult {
     advice: json['advice'] ?? '',
     cropInsight: json['cropInsight'] as String?,
     cropDisplayName: json['cropDisplayName'] as String?,
+    aiGenerated: json['aiGenerated'] == true,
   );
 }

@@ -34,7 +34,7 @@ class AppConstants {
 
   static const List<Map<String, String>> waterOptions = [
     {'value': 'low', 'label': 'Low', 'icon': '💧'},
-    {'value': 'medium', 'label': 'Medium', 'icon': '💧💧'},
-    {'value': 'high', 'label': 'High', 'icon': '💧💧💧'},
+    {'value': 'medium', 'label': 'Medium', 'icon': '💧'},
+    {'value': 'high', 'label': 'High', 'icon': '💧'},
   ];
 }

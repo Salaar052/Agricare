@@ -61,6 +61,38 @@ class _AdminChatRoomDetailScreenState extends State<AdminChatRoomDetailScreen> {
     }
   }
 
+  Future<void> _confirmDeleteMessage(Message msg) async {
+    if (msg.id.isEmpty) return;
+    final ok = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Delete message'),
+            content: const Text('Remove this message permanently?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!ok) return;
+    try {
+      await _chatApi.adminDeleteMessage(msg.id);
+      if (!mounted) return;
+      setState(() => _messages.removeWhere((m) => m.id == msg.id));
+      Get.snackbar('Success', 'Message deleted', snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      if (!mounted) return;
+      Get.snackbar('Error', '$e', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Future<void> _confirmRemoveMember(Map<String, dynamic> member) async {
     final memberId = member['_id']?.toString() ?? '';
     final username = member['username']?.toString() ?? 'Unknown';
@@ -142,13 +174,16 @@ class _AdminChatRoomDetailScreenState extends State<AdminChatRoomDetailScreen> {
                           itemCount: _messages.length,
                           itemBuilder: (context, i) {
                             final msg = _messages[i];
-                            return MessageBubble(
-                              sender: msg.sender,
-                              senderName: msg.senderName,
-                              message: msg.message,
-                              fileUrl: msg.fileUrl,
-                              isMe: false,
-                              timestamp: msg.createdAt,
+                            return GestureDetector(
+                              onLongPress: () => _confirmDeleteMessage(msg),
+                              child: MessageBubble(
+                                sender: msg.sender,
+                                senderName: msg.senderName,
+                                message: msg.message,
+                                fileUrl: msg.fileUrl,
+                                isMe: false,
+                                timestamp: msg.createdAt,
+                              ),
                             );
                           },
                         ),

@@ -14,6 +14,7 @@ import {
   disableSellerAccountHandler,
   enableSellerAccountHandler,
   deleteSellerAccountHandler,
+  blockUserCompletelyHandler,
   changeAdminPasswordHandler,
 } from "../../controllers/auth/authentication.js";
 import {
@@ -57,5 +58,6 @@ router.get("/admin/farmers/:userId", verifyJwt, getFarmerDetailsForAdminHandler)
 router.put("/admin/sellers/:userId/disable", verifyJwt, disableSellerAccountHandler);
 router.put("/admin/sellers/:userId/enable", verifyJwt, enableSellerAccountHandler);
 router.delete("/admin/sellers/:userId", verifyJwt, deleteSellerAccountHandler);
+router.delete("/admin/users/:userId/block", verifyJwt, blockUserCompletelyHandler);
 
 export default router;

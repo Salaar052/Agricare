@@ -62,7 +62,10 @@ class OptionChip extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(icon, style: const TextStyle(fontSize: 22)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(icon, style: const TextStyle(fontSize: 20)),
+              ),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -70,7 +73,7 @@ class OptionChip extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: isSelected ? Colors.white : const Color(0xFF374151),
                 ),

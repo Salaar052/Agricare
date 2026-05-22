@@ -532,6 +532,28 @@ class AuthService {
     throw Exception(data['message'] ?? 'Failed to disable seller account');
   }
 
+  Future<void> blockUserCompletely(String userId) async {
+    final response = await _makeRequest(
+      'DELETE',
+      '$baseUrl/admin/users/$userId/block',
+      headers: {'Authorization': 'Bearer ${_authController.token.value}'},
+    );
+
+    final data = json.decode(response.body);
+    if (response.statusCode == 200 && data['success'] == true) {
+      Get.snackbar(
+        'Success',
+        data['message'] ?? 'User blocked and data removed',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    throw Exception(data['message'] ?? 'Failed to block user');
+  }
+
   Future<void> deleteSellerAccount(String userId) async {
     final response = await _makeRequest(
       'DELETE',

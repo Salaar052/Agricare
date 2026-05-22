@@ -128,18 +128,15 @@ export default function CommunityModerationPage() {
   }
 
   async function blockUser(memberId: string) {
-    if (!roomId) return;
     if (
       !confirm(
-        "Block and delete this user? This will remove the user from the database, delete their listings, delete their chat messages, and delete rooms they created.",
+        "Block and delete this user? This will remove their account, listings, community messages, groups they created, and AI chats.",
       )
     )
       return;
     setError(null);
-    const res = await fetch(`/api/admin/community/users/${memberId}/block`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ roomId }),
+    const res = await fetch(`/api/admin/users/${memberId}/block`, {
+      method: "DELETE",
     });
     const j = (await res.json().catch(() => null)) as { error?: string } | null;
     if (!res.ok) {

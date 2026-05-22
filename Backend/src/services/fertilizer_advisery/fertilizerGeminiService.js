@@ -3,14 +3,19 @@ import { askGemini } from "../ai_chatbot/geminiService.js";
 /**
  * Dynamic fertilizer & pesticide advisory via Gemini from validated soil/weather data.
  */
-export async function getGeminiFertilizerAdvisory(crop, soil, weather) {
+export async function getGeminiFertilizerAdvisory(crop, soil, weather, ruleHints = null) {
+  const hints = ruleHints
+    ? `\nRule-based baseline (use as hints, improve with your expertise):\n${JSON.stringify(ruleHints)}\n`
+    : "";
+
   const prompt =
     `You are an expert agronomist for AgriCare. Analyze this farm data and provide practical fertilizer and pest recommendations.\n\n` +
     `Crop: ${crop}\n` +
     `Soil (mg/kg): Nitrogen=${soil.nitrogen}, Phosphorus=${soil.phosphorus}, Potassium=${soil.potassium}` +
     (soil.ph != null ? `, pH=${soil.ph}` : "") +
-    `\nWeather: Temperature=${weather.temperature}°C, Humidity=${weather.humidity}%\n\n` +
-    `Reply with ONLY valid JSON (no markdown):\n` +
+    `\nWeather: Temperature=${weather.temperature}°C, Humidity=${weather.humidity}%\n` +
+    hints +
+    `\nReply with ONLY valid JSON (no markdown):\n` +
     `{\n` +
     `  "summary": "<2-3 sentence overview for the farmer>",\n` +
     `  "fertilizers": ["<fertilizer name — short reason>", ...],\n` +

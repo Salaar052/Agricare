@@ -56,7 +56,7 @@ class _AdminFarmersScreenState extends State<AdminFarmersScreen> {
             ),
           ),
         ),
-        title: const Text("Registered Farmers"),
+        title: const Text("Users & Sellers"),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -127,25 +127,75 @@ class _AdminFarmersScreenState extends State<AdminFarmersScreen> {
                               farmer['email']?.toString() ?? '',
                               style: const TextStyle(fontWeight: FontWeight.w500),
                             ),
-                            trailing: Chip(
-                              backgroundColor: isSeller
-                                  ? (sellerIsActive
-                                      ? const Color(0xFFE4F3DD)
-                                      : const Color(0xFFFCE8E8))
-                                  : const Color(0xFFF0F2EF),
-                              label: Text(
-                                isSeller
-                                    ? (sellerIsActive ? "Seller" : "Seller (Disabled)")
-                                    : "Not Seller",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: isSeller
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Chip(
+                                  backgroundColor: isSeller
                                       ? (sellerIsActive
-                                          ? const Color(0xFF2E6A22)
-                                          : const Color(0xFF9C2E2E))
-                                      : const Color(0xFF5E6A5B),
+                                          ? const Color(0xFFE4F3DD)
+                                          : const Color(0xFFFCE8E8))
+                                      : const Color(0xFFF0F2EF),
+                                  label: Text(
+                                    isSeller
+                                        ? (sellerIsActive ? "Seller" : "Disabled")
+                                        : "User",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: isSeller
+                                          ? (sellerIsActive
+                                              ? const Color(0xFF2E6A22)
+                                              : const Color(0xFF9C2E2E))
+                                          : const Color(0xFF5E6A5B),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                IconButton(
+                                  tooltip: 'Block user',
+                                  icon: const Icon(Icons.block, color: Colors.red),
+                                  onPressed: userId.isEmpty
+                                      ? null
+                                      : () async {
+                                          final ok = await showDialog<bool>(
+                                            context: context,
+                                            builder: (_) => AlertDialog(
+                                              title: const Text('Block user'),
+                                              content: const Text(
+                                                'Permanently remove this user and all their data (listings, chats, messages)?',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, false),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, true),
+                                                  child: const Text(
+                                                    'Block',
+                                                    style: TextStyle(color: Colors.red),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (ok != true) return;
+                                          try {
+                                            await _authService.blockUserCompletely(userId);
+                                            await _loadFarmers();
+                                          } catch (e) {
+                                            Get.snackbar(
+                                              'Error',
+                                              e.toString().replaceAll('Exception: ', ''),
+                                              snackPosition: SnackPosition.TOP,
+                                              backgroundColor: Colors.red.withOpacity(0.8),
+                                              colorText: Colors.white,
+                                            );
+                                          }
+                                        },
+                                ),
+                              ],
                             ),
                           ),
                         );

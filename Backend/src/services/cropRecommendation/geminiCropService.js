@@ -416,7 +416,6 @@ ${schemaForPlanType}
 
 IMPORTANT: Respond ONLY with JSON.`;
 
-    // Call Gemini API
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
@@ -433,13 +432,10 @@ IMPORTANT: Respond ONLY with JSON.`;
       },
       {
         timeout: 75000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       }
     );
 
-    // Extract response
     let botResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!botResponse) {

@@ -1,7 +1,6 @@
 import axios from "axios";
 
-// 🌿 AGRICARE SYSTEM CONTEXT (GLOBAL - ALWAYS USED)
-const AGRICARE_CONTEXT = `
+export const AGRICARE_CONTEXT = `
 You are an AI assistant inside a platform called "AgriCare".
 
 AgriCare is an AI-powered agriculture advisory system designed to help farmers make better decisions using data, technology, and expert guidance.
@@ -45,21 +44,11 @@ export async function askGemini(prompt, conversationHistory = []) {
 
     const contents = [];
 
-    // ============================================
-    // 1. SYSTEM CONTEXT (ALWAYS FIRST)
-    // ============================================
     contents.push({
       role: "user",
-      parts: [
-        {
-          text: AGRICARE_CONTEXT,
-        },
-      ],
+      parts: [{ text: AGRICARE_CONTEXT }],
     });
 
-    // ============================================
-    // 2. CONVERSATION HISTORY
-    // ============================================
     if (conversationHistory && conversationHistory.length > 0) {
       conversationHistory.forEach((msg) => {
         contents.push({
@@ -69,25 +58,17 @@ export async function askGemini(prompt, conversationHistory = []) {
       });
     }
 
-    // ============================================
-    // 3. CURRENT USER MESSAGE
-    // ============================================
     contents.push({
       role: "user",
       parts: [{ text: prompt }],
     });
 
-    // ============================================
-    // GEMINI API CALL
-    // ============================================
     const res = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       { contents },
       {
         timeout: 30000,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
 
@@ -95,16 +76,10 @@ export async function askGemini(prompt, conversationHistory = []) {
       res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!botResponse) {
-      return {
-        success: false,
-        error: "No response from Gemini AI",
-      };
+      return { success: false, error: "No response from Gemini AI" };
     }
 
-    return {
-      success: true,
-      response: botResponse,
-    };
+    return { success: true, response: botResponse };
   } catch (error) {
     console.error("Gemini API Error:", error.response?.data || error.message);
 
@@ -115,21 +90,13 @@ export async function askGemini(prompt, conversationHistory = []) {
           error.response.data?.error?.message ||
           "Gemini API request failed",
       };
-    } else if (error.request) {
-      return {
-        success: false,
-        error: "No response from Gemini API",
-      };
-    } else if (error.code === "ECONNABORTED") {
-      return {
-        success: false,
-        error: "Request timeout. Please try again.",
-      };
-    } else {
-      return {
-        success: false,
-        error: "Failed to communicate with Gemini AI",
-      };
     }
+    if (error.request) {
+      return { success: false, error: "No response from Gemini API" };
+    }
+    if (error.code === "ECONNABORTED") {
+      return { success: false, error: "Request timeout. Please try again." };
+    }
+    return { success: false, error: "Failed to communicate with Gemini AI" };
   }
 }
