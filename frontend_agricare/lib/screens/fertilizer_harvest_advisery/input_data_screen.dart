@@ -129,12 +129,54 @@ class _FertilizerHarvestAdvisoryInputScreenState
     });
 
     try {
+      // parse nutrient inputs and validate ranges
+      double nitrogen = double.tryParse(_nitrogenController.text) ?? double.nan;
+      double phosphorus =
+          double.tryParse(_phosphorusController.text) ?? double.nan;
+      double potassium =
+          double.tryParse(_potassiumController.text) ?? double.nan;
+
+      final List<String> rangeErrors = [];
+      if (nitrogen.isNaN) {
+        rangeErrors.add('Enter a valid Nitrogen value');
+      } else if (nitrogen < SoilValidation.nitrogenMin ||
+          nitrogen > SoilValidation.nitrogenMax) {
+        rangeErrors.add(
+          'Nitrogen must be between ${SoilValidation.nitrogenMin} and ${SoilValidation.nitrogenMax} mg/kg',
+        );
+      }
+      if (phosphorus.isNaN) {
+        rangeErrors.add('Enter a valid Phosphorus value');
+      } else if (phosphorus < SoilValidation.phosphorusMin ||
+          phosphorus > SoilValidation.phosphorusMax) {
+        rangeErrors.add(
+          'Phosphorus must be between ${SoilValidation.phosphorusMin} and ${SoilValidation.phosphorusMax} mg/kg',
+        );
+      }
+      if (potassium.isNaN) {
+        rangeErrors.add('Enter a valid Potassium value');
+      } else if (potassium < SoilValidation.potassiumMin ||
+          potassium > SoilValidation.potassiumMax) {
+        rangeErrors.add(
+          'Potassium must be between ${SoilValidation.potassiumMin} and ${SoilValidation.potassiumMax} mg/kg',
+        );
+      }
+
+      if (rangeErrors.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _errorMessage = rangeErrors.join('\n');
+          _isLoading = false;
+        });
+        return;
+      }
+
       final result = await ApiService.getAdvisory(
         crop: _effectiveCropName,
         soil: SoilInput(
-          nitrogen: double.parse(_nitrogenController.text),
-          phosphorus: double.parse(_phosphorusController.text),
-          potassium: double.parse(_potassiumController.text),
+          nitrogen: nitrogen,
+          phosphorus: phosphorus,
+          potassium: potassium,
         ),
         weather: WeatherInput(
           temperature: double.parse(_temperatureController.text),
@@ -188,8 +230,8 @@ class _FertilizerHarvestAdvisoryInputScreenState
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 8,
-                    ),
+                          crossAxisCount: 8,
+                        ),
                     itemBuilder: (_, __) =>
                         const Icon(Icons.grass, color: Colors.white),
                   ),
@@ -285,31 +327,70 @@ class _FertilizerHarvestAdvisoryInputScreenState
                       color: AppTheme.fertilizerColor,
                       child: Column(
                         children: [
-                          NutrientField(
-                            label: 'Nitrogen',
-                            unit: 'mg/kg',
-                            controller: _nitrogenController,
-                            icon: Icons.circle,
-                            min: SoilValidation.nitrogenMin,
-                            max: SoilValidation.nitrogenMax,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Range: ${SoilValidation.nitrogenMin} - ${SoilValidation.nitrogenMax} mg/kg',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              NutrientField(
+                                label: 'Nitrogen',
+                                unit: 'mg/kg',
+                                controller: _nitrogenController,
+                                icon: Icons.circle,
+                                min: SoilValidation.nitrogenMin,
+                                max: SoilValidation.nitrogenMax,
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
-                          NutrientField(
-                            label: 'Phosphorus',
-                            unit: 'mg/kg',
-                            controller: _phosphorusController,
-                            icon: Icons.circle,
-                            min: SoilValidation.phosphorusMin,
-                            max: SoilValidation.phosphorusMax,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Range: ${SoilValidation.phosphorusMin} - ${SoilValidation.phosphorusMax} mg/kg',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              NutrientField(
+                                label: 'Phosphorus',
+                                unit: 'mg/kg',
+                                controller: _phosphorusController,
+                                icon: Icons.circle,
+                                min: SoilValidation.phosphorusMin,
+                                max: SoilValidation.phosphorusMax,
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
-                          NutrientField(
-                            label: 'Potassium',
-                            unit: 'mg/kg',
-                            controller: _potassiumController,
-                            icon: Icons.circle,
-                            min: SoilValidation.potassiumMin,
-                            max: SoilValidation.potassiumMax,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Range: ${SoilValidation.potassiumMin} - ${SoilValidation.potassiumMax} mg/kg',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              NutrientField(
+                                label: 'Potassium',
+                                unit: 'mg/kg',
+                                controller: _potassiumController,
+                                icon: Icons.circle,
+                                min: SoilValidation.potassiumMin,
+                                max: SoilValidation.potassiumMax,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -416,7 +497,9 @@ class _FertilizerHarvestAdvisoryInputScreenState
                     LoadingButton(
                       isLoading: _isLoading,
                       onPressed: _getAdvisory,
-                      label: _isLoading ? 'Generating AI Advisory…' : 'Get AI Advisory',
+                      label: _isLoading
+                          ? 'Generating AI Advisory…'
+                          : 'Get AI Advisory',
                       icon: Icons.auto_awesome_rounded,
                     ),
 

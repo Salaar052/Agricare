@@ -1,17 +1,22 @@
 /// Client-side soil & weather validation (mirrors backend ranges).
 class SoilValidation {
   static const double nitrogenMin = 0;
-  static const double nitrogenMax = 500;
+  static const double nitrogenMax = 140;
   static const double phosphorusMin = 0;
-  static const double phosphorusMax = 500;
+  static const double phosphorusMax = 145;
   static const double potassiumMin = 0;
-  static const double potassiumMax = 500;
+  static const double potassiumMax = 205;
   static const double temperatureMin = -10;
   static const double temperatureMax = 55;
   static const double humidityMin = 0;
   static const double humidityMax = 100;
 
-  static String? validateNutrient(String? value, String label, double min, double max) {
+  static String? validateNutrient(
+    String? value,
+    String label,
+    double min,
+    double max,
+  ) {
     if (value == null || value.trim().isEmpty) {
       return '$label is required';
     }
